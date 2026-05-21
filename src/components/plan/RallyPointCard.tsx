@@ -26,11 +26,11 @@ export function RallyPointCard({ rallyPoint, arrivingUnits = [] }: Props) {
     { label: 'Food', have: res.foodDays > 0, detail: `${res.foodDays} day(s) on hand` },
     { label: 'Shelter capacity', have: res.shelterCapacity > 0, detail: `${res.shelterCapacity} people` },
     { label: 'First aid kit', have: res.hasFirstAidKit },
-    { label: 'AED', have: res.hasAED },
+    { label: 'Automated External Defibrillator (AED)', have: res.hasAED },
     { label: 'Chainsaw', have: res.hasChainsaw },
     { label: 'Hand tools', have: res.hasHandTools },
-    { label: 'NOAA radio', have: res.hasNOAARadio },
-    { label: 'FRS radios', have: res.hasFRSRadios },
+    { label: 'National Oceanic and Atmospheric Administration (NOAA) radio', have: res.hasNOAARadio },
+    { label: 'Family Radio Service (FRS) radios', have: res.hasFRSRadios },
     { label: 'Landline', have: res.hasLandline },
   ]
 

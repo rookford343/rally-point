@@ -5,6 +5,7 @@ import { Input, Select, Checkbox } from '../ui/Input'
 import { Card, CardTitle } from '../ui/Card'
 import type { FamilyUnit, FamilyMember, Vehicle, HomeType, FuelType, VehicleType } from '../../types/plan'
 import { computeEVCoordinations } from '../../lib/plan-generator'
+import { geocodeAddress } from '../../lib/routing'
 
 interface Props { onNext: () => void; onBack: () => void }
 
@@ -59,7 +60,7 @@ function emptyUnit(): FamilyUnit {
 }
 
 export function FamilyUnitsStep({ onNext, onBack }: Props) {
-  const { plan, addUnit, updateUnit, removeUnit, setEVCoordinations } = useFamilyPlan()
+  const { plan, addUnit, updateUnit, removeUnit, setEVCoordinations, setUnitCoords } = useFamilyPlan()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [draft, setDraft] = useState<FamilyUnit>(emptyUnit())
 
@@ -85,6 +86,13 @@ export function FamilyUnitsStep({ onNext, onBack }: Props) {
       ? [...plan.units, draft]
       : plan.units.map(u => u.id === draft.id ? draft : u)
     setEVCoordinations(computeEVCoordinations(updatedUnits))
+    // Geocode address in background — populates lat/lng for route auto-calculation
+    if (draft.address) {
+      const unitId = draft.id
+      geocodeAddress(draft.address).then(coords => {
+        if (coords) setUnitCoords(unitId, coords.lat, coords.lng)
+      })
+    }
   }
 
   function updateMember(idx: number, field: keyof FamilyMember, value: string | number) {
@@ -198,6 +206,14 @@ export function FamilyUnitsStep({ onNext, onBack }: Props) {
             <Checkbox label="Has designated safe room" checked={draft.hasSafeRoom} onChange={e => setDraft({ ...draft, hasSafeRoom: e.target.checked })} />
             <Checkbox label="In a flood plain / near waterway" checked={draft.inFloodPlain} onChange={e => setDraft({ ...draft, inFloodPlain: e.target.checked, nearWaterway: e.target.checked })} />
           </div>
+
+          <Input
+            label="Outdoor meeting spot"
+            placeholder="e.g., End of driveway by the mailbox"
+            value={draft.meetingSpot ?? ''}
+            onChange={e => setDraft({ ...draft, meetingSpot: e.target.value || undefined })}
+            hint="Where does your family meet immediately outside after evacuating your home? Used in house fire and other quick-exit scenarios."
+          />
 
           {/* Members */}
           <div>

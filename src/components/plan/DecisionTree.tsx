@@ -183,15 +183,17 @@ export function DecisionTree({ onClose }: Props) {
                   <dt className="text-gray-600">FRS channel:</dt>
                   <dd className="font-mono text-right">{personalContext.frsChannel}</dd>
                 </div>
-                <div className="flex justify-between gap-3">
-                  <dt className="text-gray-600">Out-of-state coordinator:</dt>
-                  <dd className="text-right">
-                    {personalContext.coordinatorName || '(not set)'}
-                    {personalContext.coordinatorPhone && (
-                      <span className="block font-mono text-xs">{personalContext.coordinatorPhone}</span>
-                    )}
-                  </dd>
-                </div>
+                {personalContext.coordinatorName && (
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-gray-600">Out-of-state coordinator:</dt>
+                    <dd className="text-right">
+                      {personalContext.coordinatorName}
+                      {personalContext.coordinatorPhone && (
+                        <span className="block font-mono text-xs">{personalContext.coordinatorPhone}</span>
+                      )}
+                    </dd>
+                  </div>
+                )}
               </dl>
             </Card>
 

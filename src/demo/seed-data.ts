@@ -17,6 +17,7 @@ export const DEMO_PLAN: FamilyPlan = {
       safeRoomDescription: 'Basement interior wall closet — southwest corner',
       inFloodPlain: false,
       nearWaterway: false,
+      meetingSpot: 'End of driveway by the mailbox',
       clusterId: 'westfield-cluster',
       members: [
         {
@@ -295,6 +296,28 @@ export const DEMO_PLAN: FamilyPlan = {
     { id: 'inv-12', name: 'Chainsaw (gas-powered)', category: 'tools', status: 'have', scenarioRelevance: ['tornado', 'winter-storm'], quantity: '1', storageLocation: 'Grandparents\' garage', notes: 'At Marshall Hub — available for debris clearing after tornado' },
   ],
 
+  unitRoutes: [
+    {
+      unitId: 'unit-1',
+      toHubId: 'rp-westfield',
+      routes: [
+        {
+          label: 'Primary',
+          steps: [
+            { streetName: 'Carey Road', distanceMiles: 1.2, durationSeconds: 120, maneuver: 'depart' },
+            { streetName: 'Spring Mill Road', distanceMiles: 2.8, durationSeconds: 280, maneuver: 'turn right' },
+            { streetName: '196th Street', distanceMiles: 0.5, durationSeconds: 60, maneuver: 'turn left' },
+          ],
+          totalMiles: 4.5,
+          estimatedMinutes: 8,
+          avoidRoads: ['US-31', 'I-69 (first hour of any major evacuation)'],
+          useWhen: 'Default route',
+          autoCalculated: false,
+        },
+      ],
+      researchNotes: 'Spring Mill Rd is less congested than US-31 during rush hour and major events.',
+    },
+  ],
   completedSteps: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
   currentStep: 10,
 }

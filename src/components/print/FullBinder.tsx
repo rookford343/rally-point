@@ -44,17 +44,23 @@ export function FullBinder() {
         <div style={tabHeader}>TAB 1 — COMMUNICATION PLAN</div>
         <h1 style={h1Style}>Communication Plan</h1>
 
-        <h2 style={h2Style}>Out-of-State Coordinator</h2>
-        <p style={{ fontSize: '13pt' }}>
-          <strong>{plan.communication?.outOfStateCoordinatorName ?? '(not set)'}</strong> ·{' '}
-          <span style={{ fontFamily: 'monospace' }}>{plan.communication?.outOfStateCoordinatorPhone ?? '(not set)'}</span>
-          {plan.communication?.outOfStateCoordinatorRelationship && ` (${plan.communication.outOfStateCoordinatorRelationship})`}
-        </p>
-        <p style={{ fontSize: '10pt', color: '#444' }}>
-          Every family member calls this person when local lines are down. They relay status across clusters.
-        </p>
+        {plan.communication?.outOfStateCoordinatorName && (
+          <>
+            <h2 style={h2Style}>Out-of-State Coordinator</h2>
+            <p style={{ fontSize: '13pt' }}>
+              <strong>{plan.communication.outOfStateCoordinatorName}</strong>
+              {plan.communication.outOfStateCoordinatorPhone && (
+                <> · <span style={{ fontFamily: 'monospace' }}>{plan.communication.outOfStateCoordinatorPhone}</span></>
+              )}
+              {plan.communication.outOfStateCoordinatorRelationship && ` (${plan.communication.outOfStateCoordinatorRelationship})`}
+            </p>
+            <p style={{ fontSize: '10pt', color: '#444' }}>
+              Every family member calls this person when local lines are down. They relay status across clusters.
+            </p>
+          </>
+        )}
 
-        <h2 style={h2Style}>FRS Radio Assignments</h2>
+        <h2 style={h2Style}>Family Radio Service (FRS) Radio Assignments</h2>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
@@ -81,7 +87,7 @@ export function FullBinder() {
           {plan.communication?.checkInTimes.join(' · ') ?? '08:00 · 12:00 · 18:00'}
         </p>
 
-        <h2 style={h2Style}>EV Coordination</h2>
+        <h2 style={h2Style}>Electric Vehicle (EV) Coordination</h2>
         {plan.evCoordinations.length === 0 ? (
           <p style={{ fontSize: '10pt' }}>None — all units have gas/hybrid vehicles.</p>
         ) : (
@@ -397,7 +403,7 @@ export function FullBinder() {
         </ul>
         <h2 style={h2Style}>If Comms Stay Down</h2>
         <ul>
-          <li>FRS check-ins at the times listed in Tab 1.</li>
+          <li>Family Radio Service (FRS) check-ins at the times listed in Tab 1.</li>
           <li>Local AM radio is the most resilient broadcast medium.</li>
           <li>4-hour rule: no contact → cluster hub.</li>
         </ul>

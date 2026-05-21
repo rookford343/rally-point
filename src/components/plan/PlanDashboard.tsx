@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useFamilyPlan } from '../../store/family-plan'
 import { Button } from '../ui/Button'
 import { Card } from '../ui/Card'
@@ -6,6 +6,7 @@ import { SCENARIOS, PROBABILITY_LABELS } from '../../data/scenarios/index'
 import type { ProbabilityTier } from '../../data/scenarios/index'
 import { computeSupplyDurations } from '../../lib/plan-generator'
 import { printLayout } from '../../lib/print'
+import { exportPlan, importPlanFromFile } from '../../lib/export-import'
 import { DecisionTree } from './DecisionTree'
 import { ScenarioPlaybook } from './ScenarioPlaybook'
 import { RallyPointCard } from './RallyPointCard'
@@ -29,9 +30,26 @@ const TIER_STYLES: Record<ProbabilityTier, string> = {
 }
 
 export function PlanDashboard({ onBackToWizard }: Props) {
-  const { plan } = useFamilyPlan()
+  const { plan, loadPlan } = useFamilyPlan()
   const [showTree, setShowTree] = useState(false)
   const [activeScenario, setActiveScenario] = useState<ScenarioId | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    try {
+      const imported = await importPlanFromFile(file)
+      if (window.confirm(`Replace your current plan with "${imported.planName}"?`)) {
+        loadPlan(imported)
+        setImportError(null)
+      }
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed.')
+    }
+  }
 
   if (showTree) {
     return <DecisionTree onClose={() => setShowTree(false)} />
@@ -114,6 +132,31 @@ export function PlanDashboard({ onBackToWizard }: Props) {
               Sensitive Inventory
             </Button>
           </div>
+        </div>
+
+        {/* Export / Import */}
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">
+            Backup & Restore
+          </h3>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button variant="secondary" size="sm" onClick={() => exportPlan(plan)}>
+              Export Plan
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => fileInputRef.current?.click()}>
+              Import Plan
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={handleImport}
+            />
+          </div>
+          {importError && (
+            <p className="mt-2 text-sm text-red-600">{importError}</p>
+          )}
         </div>
 
         {/* Scenarios grid */}
@@ -199,11 +242,46 @@ export function PlanDashboard({ onBackToWizard }: Props) {
           </div>
         )}
 
+        {/* Away-from-home protocols */}
+        {plan.awayProtocols.length > 0 && (
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">
+              Away-From-Home Protocols
+            </h3>
+            <div className="space-y-3">
+              {plan.awayProtocols.map(ap => {
+                const member = plan.units.flatMap(u => u.members).find(m => m.id === ap.memberId)
+                if (!member) return null
+                return (
+                  <Card key={ap.memberId}>
+                    <h4 className="font-bold text-gray-900 mb-1">{member.name}</h4>
+                    {member.awayLocation && (
+                      <p className="text-xs text-gray-500 mb-2">
+                        Typically away at: {member.awayLocation.description} — {member.awayLocation.address}
+                      </p>
+                    )}
+                    <dl className="text-sm space-y-1">
+                      <div><dt className="inline font-medium text-gray-700">Local: </dt><dd className="inline text-gray-600">{ap.localInstruction}</dd></div>
+                      <div><dt className="inline font-medium text-gray-700">In-state: </dt><dd className="inline text-gray-600">{ap.inStateInstruction}</dd></div>
+                      <div><dt className="inline font-medium text-gray-700">Out-of-state: </dt><dd className="inline text-gray-600">{ap.outOfStateInstruction}</dd></div>
+                      {ap.schoolPickupPassphraseNote && (
+                        <div className="mt-1 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                          <strong>School pickup:</strong> {ap.schoolPickupPassphraseNote}
+                        </div>
+                      )}
+                    </dl>
+                  </Card>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {/* EV summary */}
         {plan.evCoordinations.length > 0 && (
           <div>
             <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">
-              EV Coordination
+              Electric Vehicle (EV) Coordination
             </h3>
             <Card variant="warning">
               {plan.evCoordinations.map(evc => {

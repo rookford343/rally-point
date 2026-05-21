@@ -12,6 +12,7 @@ import type {
   AwayProtocol,
   PrepInventoryItem,
   EVCoordination,
+  UnitRoute,
 } from '../types/plan'
 
 const CURRENT_VERSION = 1
@@ -32,6 +33,7 @@ function defaultPlan(): FamilyPlan {
     passphrase: null,
     awayProtocols: [],
     prepInventory: [],
+    unitRoutes: [],
     completedSteps: [],
     currentStep: 0,
   }
@@ -69,6 +71,10 @@ interface FamilyPlanStore {
   // Inventory
   setPrepInventory: (items: PrepInventoryItem[]) => void
   updateInventoryItem: (item: PrepInventoryItem) => void
+  // Routes
+  setUnitRoutes: (routes: UnitRoute[]) => void
+  setUnitCoords: (unitId: string, lat: number, lng: number) => void
+  setRallyPointCoords: (rpId: string, lat: number, lng: number) => void
   // Sensitive inventory is stored in a separate localStorage key (see storage.ts)
   // Load a complete plan (used by demo mode)
   loadPlan: (plan: FamilyPlan) => void
@@ -162,6 +168,25 @@ export const useFamilyPlan = create<FamilyPlanStore>()(
           plan: touch({
             ...s.plan,
             prepInventory: s.plan.prepInventory.map(i => i.id === item.id ? item : i),
+          }),
+        })),
+
+      setUnitRoutes: (routes) =>
+        set(s => ({ plan: touch({ ...s.plan, unitRoutes: routes }) })),
+
+      setUnitCoords: (unitId, lat, lng) =>
+        set(s => ({
+          plan: touch({
+            ...s.plan,
+            units: s.plan.units.map(u => u.id === unitId ? { ...u, lat, lng } : u),
+          }),
+        })),
+
+      setRallyPointCoords: (rpId, lat, lng) =>
+        set(s => ({
+          plan: touch({
+            ...s.plan,
+            rallyPoints: s.plan.rallyPoints.map(r => r.id === rpId ? { ...r, lat, lng } : r),
           }),
         })),
 

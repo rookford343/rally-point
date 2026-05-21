@@ -3,6 +3,7 @@ import { WelcomeStep } from './WelcomeStep'
 import { FamilyUnitsStep } from './FamilyUnitsStep'
 import { PetsStep } from './PetsStep'
 import { RallyPointsStep } from './RallyPointsStep'
+import { RouteReviewStep } from './RouteReviewStep'
 import { AwayProfilesStep } from './AwayProfilesStep'
 import { CommunicationStep } from './CommunicationStep'
 import { DepartureSignalStep } from './DepartureSignalStep'
@@ -16,6 +17,7 @@ const STEPS = [
   { label: 'Family Units', component: FamilyUnitsStep },
   { label: 'Pets', component: PetsStep },
   { label: 'Rally Points', component: RallyPointsStep },
+  { label: 'Routes', component: RouteReviewStep },
   { label: 'Away Profiles', component: AwayProfilesStep },
   { label: 'Communications', component: CommunicationStep },
   { label: 'Departure Signal', component: DepartureSignalStep },

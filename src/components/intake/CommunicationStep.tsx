@@ -85,8 +85,8 @@ export function CommunicationStep({ onNext, onBack }: Props) {
       neighborContacts: neighbors
         .filter(n => n.name.trim().length > 0)
         .map(n => ({ name: n.name, address: n.address, phone: n.phone || undefined })),
-      outOfStateCoordinatorName: coordName,
-      outOfStateCoordinatorPhone: coordPhone,
+      outOfStateCoordinatorName: coordName || undefined,
+      outOfStateCoordinatorPhone: coordPhone || undefined,
       outOfStateCoordinatorRelationship: coordRelationship || undefined,
     }
     setCommunication(comm)
@@ -98,15 +98,15 @@ export function CommunicationStep({ onNext, onBack }: Props) {
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Communications</h2>
         <p className="text-gray-600 mt-1">
-          Phones fail. The plan is FRS radios, scheduled check-ins, and one out-of-state coordinator. Everything else (Meshtastic, ham, neighbors) is layered on top.
+          Phones fail. The plan is Family Radio Service (FRS) radios, scheduled check-ins, and one out-of-state coordinator. Everything else (Meshtastic, ham, neighbors) is layered on top.
         </p>
       </div>
 
       {/* ── FRS Radios ───────────────────────────────────────────────── */}
       <Card className="space-y-4">
-        <CardTitle>FRS Radios</CardTitle>
+        <CardTitle>Family Radio Service (FRS) Radios</CardTitle>
         <p className="text-sm text-gray-600">
-          FRS is the primary backup. No license required. 2-mile range on flat ground, much more if there's elevation. Each unit gets a channel.
+          FRS is the primary backup communication channel. No license required. 2-mile range on flat ground, much more if there's elevation. Each unit gets a channel.
         </p>
         <Input
           label="Total FRS radio units owned across the family"
@@ -199,7 +199,7 @@ export function CommunicationStep({ onNext, onBack }: Props) {
 
       {/* ── NOAA radio ──────────────────────────────────────────────── */}
       <Card className="space-y-3">
-        <CardTitle>NOAA Weather Radio</CardTitle>
+        <CardTitle>National Oceanic and Atmospheric Administration (NOAA) Weather Radio</CardTitle>
         <Checkbox label="Have a NOAA weather radio" checked={hasNOAARadio} onChange={e => setHasNOAARadio(e.target.checked)} />
         {hasNOAARadio && (
           <Input
@@ -235,12 +235,10 @@ export function CommunicationStep({ onNext, onBack }: Props) {
       </Card>
 
       {/* ── Out-of-state coordinator ────────────────────────────────── */}
-      <Card variant={coordName && coordPhone ? 'success' : 'warning'} className="space-y-3">
-        <CardTitle>Out-of-State Coordinator</CardTitle>
-        <p className="text-sm">
-          {coordName && coordPhone
-            ? '✓ Loaded from earlier step. Edit here if needed — saved when you continue.'
-            : 'Critical role: the relay point when local lines fail. Pre-filled from Rally Points step if you set it there.'}
+      <Card variant={coordName && coordPhone ? 'success' : 'default'} className="space-y-3">
+        <CardTitle>Out-of-State Coordinator <span className="text-sm font-normal text-gray-500">(optional)</span></CardTitle>
+        <p className="text-sm text-gray-600">
+          Recommended but not required. An out-of-state contact acts as a relay hub when local communication is down — someone outside the affected area who knows where each cluster is and can relay messages between them.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Input label="Name" value={coordName} onChange={e => setCoordName(e.target.value)} />
@@ -251,7 +249,7 @@ export function CommunicationStep({ onNext, onBack }: Props) {
 
       <div className="flex justify-between pt-4 border-t border-gray-200">
         <Button variant="ghost" onClick={onBack}>← Back</Button>
-        <Button onClick={persistAndContinue} disabled={!coordName || !coordPhone}>
+        <Button onClick={persistAndContinue}>
           Save & Continue →
         </Button>
       </div>

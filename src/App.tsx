@@ -13,12 +13,14 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    if (params.get('demo') === 'true') {
+    const isGitHubPages = window.location.hostname.endsWith('.github.io')
+    const isPlanEmpty = plan.completedSteps.length === 0
+    if (params.get('demo') === 'true' || (isGitHubPages && isPlanEmpty)) {
       loadPlan(DEMO_PLAN)
       setIsDemoMode(true)
       setForcedView('dashboard')
     }
-  }, [loadPlan])
+  }, [loadPlan, plan.completedSteps.length])
 
   const wizardComplete = plan.completedSteps.length >= TOTAL_WIZARD_STEPS
   const view = forcedView ?? (wizardComplete ? 'dashboard' : 'wizard')

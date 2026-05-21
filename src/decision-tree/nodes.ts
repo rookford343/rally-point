@@ -12,6 +12,7 @@ export const DECISION_NODES: DecisionNode[] = [
     id: 'root',
     question: 'What is happening right now?',
     options: [
+      { label: 'Smoke alarm / fire in my home', nextId: 'fire-out' },
       { label: 'Tornado warning / severe storm', nextId: 'tornado-home-safe' },
       { label: 'Water is rising / flood warning', nextId: 'flood-leave' },
       { label: 'Power is out', nextId: 'power-ev-check' },
@@ -21,6 +22,68 @@ export const DECISION_NODES: DecisionNode[] = [
       { label: 'I need to check our supplies', nextId: 'resources-root' },
       { label: 'Something feels wrong / uncertain', nextId: 'uncertain' },
     ],
+  },
+
+  // ── House fire branch ─────────────────────────────────────────────────────
+  {
+    id: 'fire-out',
+    question: 'Are you and everyone in the household out of the building?',
+    options: [
+      { label: 'Yes — everyone is out', nextId: 'fire-safe-outside' },
+      { label: 'No — someone is still inside', nextId: 'fire-get-out' },
+      { label: 'I am trapped inside', nextId: 'fire-trapped' },
+    ],
+  },
+  {
+    id: 'fire-get-out',
+    question: 'fire-get-out',
+    terminal: {
+      type: 'ACTIVATE_EVACUATION',
+      title: '⚠ Get Out Now — Do Not Go Back In',
+      urgency: 'critical',
+      instructions: [
+        'Activate your smoke alarm / shout "FIRE" to alert everyone immediately.',
+        'Close doors behind you as you exit — this slows fire spread significantly.',
+        'Feel each door before opening: if hot, find another way out.',
+        'If smoke is heavy: get low and crawl to the exit.',
+        'Do NOT go back inside once you are out — call 911 and wait for firefighters.',
+        'Meet at your outdoor meeting spot.',
+      ],
+    },
+  },
+  {
+    id: 'fire-trapped',
+    question: 'fire-trapped',
+    terminal: {
+      type: 'ACTIVATE_EVACUATION',
+      title: '⚠ Trapped — Signal for Help',
+      urgency: 'critical',
+      instructions: [
+        'Close the door to the room you are in — this buys time.',
+        'Seal the gap at the bottom of the door with clothing or a towel.',
+        'Call 911 immediately and give your exact location.',
+        'Signal from a window — wave something bright, shout.',
+        'Do NOT open the window unless smoke fills the room.',
+        'If smoke enters: stay low to the floor where air is cleaner.',
+      ],
+    },
+  },
+  {
+    id: 'fire-safe-outside',
+    question: 'fire-safe-outside',
+    terminal: {
+      type: 'ACTIVATE_EVACUATION',
+      title: 'Everyone Out — Call 911',
+      urgency: 'critical',
+      instructions: [
+        'Call 911 immediately. Give the address and confirm everyone is out.',
+        'Do NOT go back inside for any reason — not for pets, not for documents.',
+        'Stay at your outdoor meeting spot so firefighters can confirm everyone is accounted for.',
+        'If pets are missing, tell firefighters — do not go back in yourself.',
+        'If home is uninhabitable: activate rally protocol and go to your cluster hub.',
+        'Contact your insurance company as soon as possible.',
+      ],
+    },
   },
 
   // ── Tornado branch ────────────────────────────────────────────────────────

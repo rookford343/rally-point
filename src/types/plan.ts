@@ -14,6 +14,7 @@ export type ScenarioId =
   | 'telecom-failure'
   | 'civil-unrest'
   | 'earthquake'
+  | 'house-fire'
 
 // ── Vehicle ─────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ export interface FamilyUnit {
   safeRoomDescription?: string
   inFloodPlain: boolean
   nearWaterway: boolean
+  meetingSpot?: string   // outdoor gathering point after home evacuation
   // Assigned by clustering logic, not entered directly
   clusterId?: string
 }
@@ -152,8 +154,8 @@ export interface CommunicationPlan {
   hasNOAARadio: boolean
   noaaModel?: string
   neighborContacts: { name: string; address: string; phone?: string }[]
-  outOfStateCoordinatorName: string
-  outOfStateCoordinatorPhone: string
+  outOfStateCoordinatorName?: string
+  outOfStateCoordinatorPhone?: string
   outOfStateCoordinatorRelationship?: string
 }
 
@@ -215,6 +217,34 @@ export interface SensitiveInventory {
   nonLethal: PrepInventoryItem[]
 }
 
+// ── Route planning ───────────────────────────────────────────────────────────
+
+export interface RouteStep {
+  streetName: string
+  distanceMiles: number
+  durationSeconds: number
+  maneuver: string
+}
+
+export interface RouteOption {
+  label: string
+  steps: RouteStep[]
+  totalMiles: number
+  estimatedMinutes: number
+  heavyTrafficMinutes?: number
+  avoidRoads: string[]
+  useWhen: string
+  autoCalculated: boolean
+}
+
+export interface UnitRoute {
+  unitId: string
+  toHubId: string
+  routes: RouteOption[]
+  lastCalculated?: string
+  researchNotes?: string
+}
+
 // ── Root family plan ─────────────────────────────────────────────────────────
 
 export interface FamilyPlan {
@@ -245,6 +275,9 @@ export interface FamilyPlan {
 
   // Inventory (general)
   prepInventory: PrepInventoryItem[]
+
+  // Pre-researched routes
+  unitRoutes: UnitRoute[]
 
   // Wizard state
   completedSteps: number[]

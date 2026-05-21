@@ -9,8 +9,8 @@ interface CardCommonData {
   planName: string
   primaryHub: string
   secondaryHub: string
-  coordName: string
-  coordPhone: string
+  coordName?: string
+  coordPhone?: string
   frsChannel: string
   checkIns: string
   fourHourRule: string
@@ -33,8 +33,8 @@ function buildCommon(unit: FamilyUnit, data: FamilyPlan): CardCommonData {
     planName: data.planName,
     primaryHub: primary?.address ?? '(not set)',
     secondaryHub: secondary?.address ?? '(not set)',
-    coordName: data.communication?.outOfStateCoordinatorName ?? '(not set)',
-    coordPhone: data.communication?.outOfStateCoordinatorPhone ?? '',
+    coordName: data.communication?.outOfStateCoordinatorName,
+    coordPhone: data.communication?.outOfStateCoordinatorPhone,
     frsChannel: ch ? `Ch ${ch.channel}` : '(not set)',
     checkIns: data.communication?.checkInTimes.join(' / ') ?? '08:00 / 12:00 / 18:00',
     fourHourRule: '4-hour rule: no contact ≥ 4hr → cluster hub',
@@ -60,9 +60,11 @@ function StandardCard({ unit, common }: SingleProps) {
       <div>
         <strong>Convergence hub:</strong> {common.secondaryHub}
       </div>
-      <div>
-        <strong>Coordinator:</strong> {common.coordName} {common.coordPhone}
-      </div>
+      {common.coordName && (
+        <div>
+          <strong>Coordinator:</strong> {common.coordName}{common.coordPhone ? ` · ${common.coordPhone}` : ''}
+        </div>
+      )}
       <div>
         <strong>FRS:</strong> {common.frsChannel} · {common.checkIns}
       </div>
@@ -99,9 +101,11 @@ function ChildCard({ unit, common, childName }: SingleProps) {
       <div style={{ marginTop: '2pt' }}>
         Family meets at: <strong>{common.primaryHub}</strong>
       </div>
-      <div>
-        If we can't talk: {common.coordName} {common.coordPhone}
-      </div>
+      {common.coordName && (
+        <div>
+          If we can't talk: {common.coordName}{common.coordPhone ? ` · ${common.coordPhone}` : ''}
+        </div>
+      )}
     </div>
   )
 }

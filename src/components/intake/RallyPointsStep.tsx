@@ -12,6 +12,7 @@ import type {
   CommunicationPlan,
 } from '../../types/plan'
 import { scoreUnitsForRallyPoint, computeBringList } from '../../lib/plan-generator'
+import { geocodeAddress } from '../../lib/routing'
 
 interface Props { onNext: () => void; onBack: () => void }
 
@@ -58,6 +59,7 @@ export function RallyPointsStep({ onNext, onBack }: Props) {
     removeRallyPoint,
     setConvergencePlan,
     setCommunication,
+    setRallyPointCoords,
   } = useFamilyPlan()
 
   // ── Local cluster draft state ────────────────────────────────────────────
@@ -158,6 +160,13 @@ export function RallyPointsStep({ onNext, onBack }: Props) {
       updateRallyPoint(draftRp)
     }
     setEditingRpId(null)
+    // Geocode address in background — populates lat/lng for route auto-calculation
+    if (draftRp.address) {
+      const rpId = draftRp.id
+      geocodeAddress(draftRp.address).then(coords => {
+        if (coords) setRallyPointCoords(rpId, coords.lat, coords.lng)
+      })
+    }
   }
 
   function updateRes<K extends keyof RallyPointResources>(key: K, value: RallyPointResources[K]) {

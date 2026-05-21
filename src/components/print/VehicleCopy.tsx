@@ -48,19 +48,25 @@ export function VehicleCopy() {
       </table>
 
       {/* Coordinator */}
-      <h2 style={{ fontSize: '14pt', margin: '10pt 0 2pt 0', fontWeight: 700 }}>Out-of-State Coordinator</h2>
-      <p style={{ fontSize: '13pt', fontWeight: 700, margin: '2pt 0' }}>
-        {coord?.outOfStateCoordinatorName ?? '(not set)'}
-      </p>
-      <p style={{ fontSize: '13pt', fontFamily: 'monospace', margin: 0 }}>
-        {coord?.outOfStateCoordinatorPhone ?? '(not set)'}
-      </p>
-      {coord?.outOfStateCoordinatorRelationship && (
-        <p style={{ fontSize: '9pt', color: '#444' }}>({coord.outOfStateCoordinatorRelationship})</p>
+      {coord?.outOfStateCoordinatorName && (
+        <>
+          <h2 style={{ fontSize: '14pt', margin: '10pt 0 2pt 0', fontWeight: 700 }}>Out-of-State Coordinator</h2>
+          <p style={{ fontSize: '13pt', fontWeight: 700, margin: '2pt 0' }}>
+            {coord.outOfStateCoordinatorName}
+          </p>
+          {coord.outOfStateCoordinatorPhone && (
+            <p style={{ fontSize: '13pt', fontFamily: 'monospace', margin: 0 }}>
+              {coord.outOfStateCoordinatorPhone}
+            </p>
+          )}
+          {coord.outOfStateCoordinatorRelationship && (
+            <p style={{ fontSize: '9pt', color: '#444' }}>({coord.outOfStateCoordinatorRelationship})</p>
+          )}
+        </>
       )}
 
       {/* FRS channels */}
-      <h2 style={{ fontSize: '14pt', margin: '10pt 0 2pt 0', fontWeight: 700 }}>FRS Channels</h2>
+      <h2 style={{ fontSize: '14pt', margin: '10pt 0 2pt 0', fontWeight: 700 }}>Family Radio Service (FRS) Channels</h2>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
         <tbody>
           {plan.units.map(u => {
