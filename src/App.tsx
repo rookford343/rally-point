@@ -1,28 +1,55 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useFamilyPlan } from './store/family-plan'
 import { WizardContainer } from './components/intake/WizardContainer'
 import { PlanDashboard } from './components/plan/PlanDashboard'
+import { DEMO_PLAN } from './demo/seed-data'
 
-// The wizard has 11 total steps (indices 0–10). When all 11 are marked
-// complete the app naturally lands on the dashboard. The user can also force
-// "view dashboard" by clicking the View Plan button (handled inline below)
-// and likewise return to the wizard from the dashboard.
 const TOTAL_WIZARD_STEPS = 11
 
 export default function App() {
-  const { plan } = useFamilyPlan()
-
-  // Default view: wizard if not all steps complete, dashboard otherwise.
-  // forcedView lets the user toggle into the dashboard early (or back to the
-  // wizard from the dashboard).
-  const wizardComplete = plan.completedSteps.length >= TOTAL_WIZARD_STEPS
+  const { plan, loadPlan, resetPlan } = useFamilyPlan()
+  const [isDemoMode, setIsDemoMode] = useState(false)
   const [forcedView, setForcedView] = useState<'wizard' | 'dashboard' | null>(null)
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('demo') === 'true') {
+      loadPlan(DEMO_PLAN)
+      setIsDemoMode(true)
+      setForcedView('dashboard')
+    }
+  }, [loadPlan])
+
+  const wizardComplete = plan.completedSteps.length >= TOTAL_WIZARD_STEPS
   const view = forcedView ?? (wizardComplete ? 'dashboard' : 'wizard')
+
+  function exitDemo() {
+    resetPlan()
+    setIsDemoMode(false)
+    setForcedView('wizard')
+    const url = new URL(window.location.href)
+    url.searchParams.delete('demo')
+    window.history.replaceState({}, '', url.toString())
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Slim app header — shown on every view, hidden in print */}
+      {isDemoMode && (
+        <div className="bg-amber-400 text-amber-900 no-print">
+          <div className="max-w-4xl mx-auto px-4 py-2 flex items-center justify-between gap-4">
+            <span className="font-semibold text-sm">
+              DEMO MODE — sample Hamilton County family plan. Your data is not affected.
+            </span>
+            <button
+              onClick={exitDemo}
+              className="shrink-0 text-sm font-bold bg-amber-900 text-amber-50 px-3 py-1 rounded hover:bg-amber-800 transition-colors"
+            >
+              Start My Own Plan →
+            </button>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white border-b border-gray-200 no-print">
         <div className="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center">
           <div className="flex items-center gap-2 text-blue-900 font-bold">
@@ -37,7 +64,7 @@ export default function App() {
               View Plan →
             </button>
           )}
-          {view === 'dashboard' && (
+          {view === 'dashboard' && !isDemoMode && (
             <button
               onClick={() => setForcedView('wizard')}
               className="text-sm text-blue-900 hover:underline"

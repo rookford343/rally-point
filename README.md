@@ -7,6 +7,8 @@
 [![Built with Vite](https://img.shields.io/badge/Built%20with-Vite-646CFF.svg)](https://vitejs.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6.svg)](https://typescriptlang.org)
 
+**[→ Try the Live Demo](https://rookford343.github.io/rally-point/?demo=true)** — pre-loaded with a sample Hamilton County family plan. No signup, no data stored.
+
 Rally Point is a family disaster response planning app that works **without phones, internet, or GPS**. It guides you through building a complete, customized family emergency plan — then lets you print everything that matters before disaster strikes.
 
 No accounts. No cloud. Your data stays on your device.
@@ -46,7 +48,9 @@ Most family emergency plans are either too generic to act on or too complicated 
 
 ### Option A: Use the hosted app
 
-Visit the live app at your GitHub Pages URL — no installation required. Your data stays in your browser's local storage.
+Visit **[rookford343.github.io/rally-point](https://rookford343.github.io/rally-point/)** — no installation required. Your data stays in your browser's local storage.
+
+Want to see a completed plan first? **[Try the demo](https://rookford343.github.io/rally-point/?demo=true)** — pre-loaded with a sample Hamilton County family.
 
 ### Option B: Fork and self-host (recommended for customization)
 

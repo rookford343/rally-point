@@ -70,6 +70,8 @@ interface FamilyPlanStore {
   setPrepInventory: (items: PrepInventoryItem[]) => void
   updateInventoryItem: (item: PrepInventoryItem) => void
   // Sensitive inventory is stored in a separate localStorage key (see storage.ts)
+  // Load a complete plan (used by demo mode)
+  loadPlan: (plan: FamilyPlan) => void
   // Full reset
   resetPlan: () => void
 }
@@ -162,6 +164,8 @@ export const useFamilyPlan = create<FamilyPlanStore>()(
             prepInventory: s.plan.prepInventory.map(i => i.id === item.id ? item : i),
           }),
         })),
+
+      loadPlan: (plan) => set({ plan }),
 
       resetPlan: () => set({ plan: defaultPlan() }),
     }),
