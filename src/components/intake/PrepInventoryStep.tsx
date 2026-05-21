@@ -52,6 +52,7 @@ const SCENARIO_TAG_STYLES: Record<ScenarioId, string> = {
   'civil-unrest': 'bg-gray-200 text-gray-800',
   earthquake: 'bg-yellow-100 text-yellow-800',
   'house-fire': 'bg-red-200 text-red-900',
+  'carbon-monoxide': 'bg-gray-300 text-gray-900',
 }
 
 const SCENARIO_TAG_SHORT: Record<ScenarioId, string> = {
@@ -64,6 +65,7 @@ const SCENARIO_TAG_SHORT: Record<ScenarioId, string> = {
   'civil-unrest': 'unrest',
   earthquake: 'quake',
   'house-fire': 'fire',
+  'carbon-monoxide': 'CO',
 }
 
 const PRIORITY_RANK: Record<ChecklistItem['priority'], number> = {

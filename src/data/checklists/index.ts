@@ -65,6 +65,9 @@ export const HOME_SUPPLIES: ChecklistItem[] = [
   { id: 'home-cash', name: 'Cash reserve (home safe)', category: 'Financial', quantity: '$500–1000 small bills', priority: 'high', scenarioRelevance: ['power-outage', 'telecom-failure', 'civil-unrest'] },
   { id: 'home-helmets', name: 'Bike or sports helmets (for tornado shelter)', category: 'Safety', quantity: '1 per person', priority: 'medium', scenarioRelevance: ['tornado'] },
   { id: 'home-medications', name: '30-day buffer supply of regular medications', category: 'Medical', quantity: '30-day supply per person', priority: 'critical', scenarioRelevance: ['power-outage', 'winter-storm', 'telecom-failure', 'forced-evacuation'] },
+  { id: 'home-smoke-detector', name: 'Smoke detectors (test monthly, replace battery annually)', category: 'Safety', quantity: '1 per floor + each bedroom', notes: 'Interconnected alarms recommended — when one sounds, all sound', priority: 'critical', scenarioRelevance: ['house-fire', 'carbon-monoxide'] },
+  { id: 'home-co-detector', name: 'Carbon monoxide (CO) detector', category: 'Safety', quantity: '1 per floor + each bedroom', notes: 'Required if home has gas appliances, attached garage, or gas furnace. Replace every 5–7 years.', priority: 'critical', scenarioRelevance: ['carbon-monoxide', 'power-outage'] },
+  { id: 'home-fire-ladder', name: 'Emergency escape ladder (multi-story homes)', category: 'Safety', quantity: '1 per upper-floor bedroom', notes: 'Required for second-floor and above — store under bed', priority: 'high', scenarioRelevance: ['house-fire'] },
 ]
 
 export const DEFAULT_PREP_INVENTORY: Omit<PrepInventoryItem, 'status'>[] = [

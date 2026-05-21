@@ -12,6 +12,7 @@ export const DECISION_NODES: DecisionNode[] = [
     id: 'root',
     question: 'What is happening right now?',
     options: [
+      { label: 'CO detector alarm / gas symptoms', nextId: 'co-out' },
       { label: 'Smoke alarm / fire in my home', nextId: 'fire-out' },
       { label: 'Tornado warning / severe storm', nextId: 'tornado-home-safe' },
       { label: 'Water is rising / flood warning', nextId: 'flood-leave' },
@@ -22,6 +23,52 @@ export const DECISION_NODES: DecisionNode[] = [
       { label: 'I need to check our supplies', nextId: 'resources-root' },
       { label: 'Something feels wrong / uncertain', nextId: 'uncertain' },
     ],
+  },
+
+  // ── Carbon monoxide branch ────────────────────────────────────────────────
+  {
+    id: 'co-out',
+    question: 'Is anyone in the household showing symptoms — headache, dizziness, nausea — or is the CO detector alarming?',
+    options: [
+      { label: 'CO detector is alarming', nextId: 'co-evacuate' },
+      { label: 'People have symptoms (flu-like, no fever)', nextId: 'co-evacuate' },
+      { label: 'Not sure — checking detector', nextId: 'co-check' },
+    ],
+  },
+  {
+    id: 'co-evacuate',
+    question: 'co-evacuate',
+    terminal: {
+      type: 'ACTIVATE_EVACUATION',
+      title: '⚠ Get Out Now — Carbon Monoxide',
+      urgency: 'critical',
+      instructions: [
+        'Get everyone out immediately — including pets. Leave the door open behind you.',
+        'Do NOT stop to gather belongings.',
+        'Call 911 from outside the building.',
+        'Do NOT go back inside until fire department clears the home.',
+        'If anyone is unresponsive: call 911 and do not move them — wait for paramedics.',
+        'Anyone with symptoms should be evaluated at an emergency room.',
+        'Common sources: gas furnace, water heater, generator in garage, car warming up in attached garage.',
+      ],
+    },
+  },
+  {
+    id: 'co-check',
+    question: 'co-check',
+    terminal: {
+      type: 'MONITOR_AND_WAIT',
+      title: 'Check CO Detector — Treat as Real',
+      urgency: 'high',
+      instructions: [
+        'CO is odorless and colorless — you cannot detect it without a detector.',
+        'If detector is beeping: get out immediately. Treat every alarm as real.',
+        'Check for symptoms: headache/dizziness/nausea that clears when you go outside is a classic CO sign.',
+        'Check if pets are acting lethargic or confused — they are often affected first.',
+        'If in doubt: get everyone outside, open doors and windows, call 911.',
+        'Have your HVAC and gas appliances inspected before returning if source is unknown.',
+      ],
+    },
   },
 
   // ── House fire branch ─────────────────────────────────────────────────────

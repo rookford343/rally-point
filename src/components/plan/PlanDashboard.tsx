@@ -10,6 +10,7 @@ import { exportPlan, importPlanFromFile } from '../../lib/export-import'
 import { DecisionTree } from './DecisionTree'
 import { ScenarioPlaybook } from './ScenarioPlaybook'
 import { RallyPointCard } from './RallyPointCard'
+import { RoutesPanel } from './RoutesPanel'
 import { WalletCard } from '../print/WalletCard'
 import { FullBinder } from '../print/FullBinder'
 import { VehicleCopy } from '../print/VehicleCopy'
@@ -215,6 +216,9 @@ export function PlanDashboard({ onBackToWizard }: Props) {
             </div>
           </div>
         )}
+
+        {/* Routes */}
+        <RoutesPanel />
 
         {/* Supply durations */}
         {supplyDurations.length > 0 && (

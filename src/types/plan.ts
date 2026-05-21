@@ -15,6 +15,7 @@ export type ScenarioId =
   | 'civil-unrest'
   | 'earthquake'
   | 'house-fire'
+  | 'carbon-monoxide'
 
 // ── Vehicle ─────────────────────────────────────────────────────────────────
 

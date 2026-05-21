@@ -1,174 +1,142 @@
 import { useFamilyPlan } from '../../store/family-plan'
 
-// SVG-based decision flowchart for printing.
-// Uses proper diamond shapes, rectangle boxes, and directional arrows with arrowheads.
-// Designed for 11×17 landscape print or folded 8.5×11.
+// Multi-page SVG decision flowchart for printing.
+// Split across 3 pages so each scenario column is large enough to read without a magnifier.
+// Each page covers 3 scenario columns (page 3 covers 1 col + away-from-home protocols).
 //
-// Urgency encoding (black-and-white print safe):
-//   strokeWidth 1.5, solid  = monitor / shelter
-//   double rect (outer + inner) = activate rally
-//   strokeDasharray "8 4"   = critical / evacuate
+// Urgency encoding (B&W print safe):
+//   solid stroke = monitor / shelter
+//   double rect  = activate rally
+//   dashed       = critical / evacuate
 
-// ── Layout constants ──────────────────────────────────────────────────────────
+// ── Per-page layout constants ─────────────────────────────────────────────────
 
-const W = 1400  // viewBox width
-const H = 950   // viewBox height
+const SVG_W = 900
+const P_COL_W = 250
+const P_COL_GAP = 15
+const P_MARGIN = 62
 
-const COL_W = 210       // width of each of the 6 branch columns
-const COL_GAP = 10      // gap between columns
-const COL_START_X = 35  // left edge of first column
-const COL_START_Y = 185 // top of branch diamonds
+// Three column centers for a full-page SVG
+const PC = [0, 1, 2].map(i => P_MARGIN + i * (P_COL_W + P_COL_GAP) + P_COL_W / 2)
+// PC[0]=187, PC[1]=452, PC[2]=717
 
-// Column center X positions
-const COLS = [0, 1, 2, 3, 4, 5].map(i => COL_START_X + i * (COL_W + COL_GAP) + COL_W / 2)
+const DH = 46         // diamond half
+const BW = 232        // box width
+const BH = 60         // box height (normal)
+const BHT = 76        // box height (tall)
 
-// Node sizes
-const DIAMOND_HALF = 36    // half-width/height of decision diamond
-const BOX_W = 190          // action box width
-const BOX_H = 44           // action box height (single line; multi-line nodes use more)
-const BOX_H_TALL = 54      // taller action box for longer text
+const SPINE_Y  = 12   // horizontal spine connecting root to branches
+const LABEL_Y  = 28   // column label y
+const BRANCH   = 95   // y of first diamond
+const D2_OFF   = 122  // offset to second diamond
+const A1_OFF   = 122  // offset to first action box (from D2)
+const A2_OFF   = 108  // offset to second action box (from A1 center)
+
+const D1_Y  = BRANCH
+const D2_Y  = BRANCH + D2_OFF
+const A1_Y  = D2_Y + A1_OFF
+const A2_Y  = A1_Y + A2_OFF
+
+const SVG_H = A2_Y + BHT / 2 + 28  // ~496
 
 // ── SVG primitives ────────────────────────────────────────────────────────────
 
-function ArrowMarker() {
+function Defs({ id }: { id: string }) {
   return (
     <defs>
-      <marker
-        id="arrow"
-        markerWidth="8"
-        markerHeight="8"
-        refX="6"
-        refY="3"
-        orient="auto"
-        markerUnits="strokeWidth"
-      >
-        <path d="M0,0 L0,6 L8,3 z" fill="#000" />
-      </marker>
-      <marker
-        id="arrow-white"
-        markerWidth="8"
-        markerHeight="8"
-        refX="6"
-        refY="3"
-        orient="auto"
-        markerUnits="strokeWidth"
-      >
+      <marker id={id} markerWidth="8" markerHeight="8" refX="6" refY="3"
+        orient="auto" markerUnits="strokeWidth">
         <path d="M0,0 L0,6 L8,3 z" fill="#000" />
       </marker>
     </defs>
   )
 }
 
-interface DiamondProps {
-  cx: number; cy: number
-  label: string
-  sub?: string
-  size?: number
-}
-
-function Diamond({ cx, cy, label, sub, size = DIAMOND_HALF }: DiamondProps) {
-  const pts = `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`
+interface DiamondProps { cx: number; cy: number; label: string; sub?: string }
+function Diamond({ cx, cy, label, sub }: DiamondProps) {
+  const pts = `${cx},${cy - DH} ${cx + DH},${cy} ${cx},${cy + DH} ${cx - DH},${cy}`
   return (
     <g>
       <polygon points={pts} fill="#fff" stroke="#000" strokeWidth="1.5" />
-      <text
-        x={cx} y={cy - 4}
-        textAnchor="middle" dominantBaseline="middle"
-        fontSize="9.5" fontWeight="600" fontFamily="system-ui, sans-serif"
-      >
-        {label}
-      </text>
+      <text x={cx} y={cy - 5} textAnchor="middle" dominantBaseline="middle"
+        fontSize="11.5" fontWeight="600" fontFamily="system-ui, sans-serif">{label}</text>
       {sub && (
-        <text
-          x={cx} y={cy + 8}
-          textAnchor="middle" dominantBaseline="middle"
-          fontSize="8" fontFamily="system-ui, sans-serif"
-        >
-          {sub}
-        </text>
+        <text x={cx} y={cy + 9} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">{sub}</text>
       )}
     </g>
   )
 }
 
 type Urgency = 'shelter' | 'rally' | 'evac'
-
-interface BoxProps {
-  cx: number; cy: number
-  label: string
-  sub?: string
-  urgency: Urgency
-  w?: number
-  h?: number
-}
-
-function ActionBox({ cx, cy, label, sub, urgency, w = BOX_W, h = BOX_H }: BoxProps) {
-  const x = cx - w / 2
+interface BoxProps { cx: number; cy: number; label: string; sub?: string; urgency: Urgency; h?: number }
+function Box({ cx, cy, label, sub, urgency, h = BH }: BoxProps) {
+  const x = cx - BW / 2
   const y = cy - h / 2
-  const stroke = urgency === 'evac' ? '2' : '1.5'
   const dash = urgency === 'evac' ? '8 4' : undefined
-
   return (
     <g>
       {urgency === 'rally' && (
-        // Double border for rally: outer rect slightly larger
-        <rect x={x - 3} y={y - 3} width={w + 6} height={h + 6}
-          fill="none" stroke="#000" strokeWidth="1" />
+        <rect x={x - 3} y={y - 3} width={BW + 6} height={h + 6} fill="none" stroke="#000" strokeWidth="1" />
       )}
-      <rect
-        x={x} y={y} width={w} height={h}
-        fill="#fff" stroke="#000" strokeWidth={stroke}
-        strokeDasharray={dash}
-        rx="3"
-      />
-      <text
-        x={cx} y={sub ? cy - 7 : cy}
-        textAnchor="middle" dominantBaseline="middle"
-        fontSize="8.5" fontFamily="system-ui, sans-serif"
-      >
-        {label}
-      </text>
+      <rect x={x} y={y} width={BW} height={h} fill="#fff" stroke="#000"
+        strokeWidth={urgency === 'evac' ? 2 : 1.5} strokeDasharray={dash} rx="3" />
+      <text x={cx} y={sub ? cy - 8 : cy} textAnchor="middle" dominantBaseline="middle"
+        fontSize="10.5" fontFamily="system-ui, sans-serif">{label}</text>
       {sub && (
-        <text
-          x={cx} y={cy + 7}
-          textAnchor="middle" dominantBaseline="middle"
-          fontSize="7.5" fontFamily="system-ui, sans-serif" fill="#333"
-        >
-          {sub}
-        </text>
+        <text x={cx} y={cy + 9} textAnchor="middle" dominantBaseline="middle"
+          fontSize="9" fontFamily="system-ui, sans-serif" fill="#333">{sub}</text>
       )}
     </g>
   )
 }
 
-interface ArrowProps {
-  x1: number; y1: number; x2: number; y2: number
-  label?: string
-  bend?: boolean
-}
-
-function Arrow({ x1, y1, x2, y2, label }: ArrowProps) {
+interface ArrProps { x1: number; y1: number; x2: number; y2: number; label?: string; markerId: string }
+function Arr({ x1, y1, x2, y2, label, markerId }: ArrProps) {
   const mx = (x1 + x2) / 2
   const my = (y1 + y2) / 2
   return (
     <g>
-      <line
-        x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke="#000" strokeWidth="1.2"
-        markerEnd="url(#arrow)"
-      />
+      <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="#000" strokeWidth="1.3"
+        markerEnd={`url(#${markerId})`} />
       {label && (
-        <text
-          x={mx + 4} y={my - 3}
-          fontSize="7.5" fontFamily="system-ui, sans-serif" fill="#444"
-        >
-          {label}
-        </text>
+        <text x={mx + 5} y={my - 4} fontSize="9" fontFamily="system-ui, sans-serif" fill="#444">{label}</text>
       )}
     </g>
   )
 }
 
+// ── Page header (rendered once per page as SVG text rows) ─────────────────────
+
+function PageHeader({ title, colLabels, markerId }: { title: string; colLabels: string[]; markerId: string }) {
+  return (
+    <>
+      <text x={SVG_W / 2} y={SPINE_Y + 5} textAnchor="middle"
+        fontSize="11" fontWeight="700" fontFamily="system-ui, sans-serif">{title}</text>
+      <line x1={PC[0] - P_COL_W / 2} y1={SPINE_Y + 12} x2={PC[colLabels.length - 1] + P_COL_W / 2} y2={SPINE_Y + 12}
+        stroke="#000" strokeWidth="0.8" />
+      {colLabels.map((lbl, i) => (
+        <text key={i} x={PC[i]} y={LABEL_Y} textAnchor="middle"
+          fontSize="10" fontWeight="700" fontFamily="system-ui, sans-serif">{lbl}</text>
+      ))}
+      {colLabels.map((_, i) => (
+        <Arr key={i} markerId={markerId} x1={PC[i]} y1={LABEL_Y + 8} x2={PC[i]} y2={D1_Y - DH - 2} />
+      ))}
+    </>
+  )
+}
+
+// ── Shared page wrapper ───────────────────────────────────────────────────────
+
+function PageSVG({ children }: { children: React.ReactNode }) {
+  return (
+    <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+      style={{ width: '100%', height: 'auto', display: 'block' }}
+      xmlns="http://www.w3.org/2000/svg">
+      {children}
+    </svg>
+  )
+}
 
 // ── FlowChart component ───────────────────────────────────────────────────────
 
@@ -186,216 +154,255 @@ export function FlowChart() {
   const firstChannel = plan.communication?.frsChannels.find(c => c.unitId === firstUnit?.id)
 
   const hubAddr = primaryHub?.address ?? '(hub not set)'
-  const hubShort = hubAddr.length > 30 ? hubAddr.slice(0, 28) + '…' : hubAddr
+  const hubShort = hubAddr.length > 32 ? hubAddr.slice(0, 30) + '…' : hubAddr
   const convAddr = convergenceHub?.address ?? '(convergence not set)'
   const channel = firstChannel ? `Ch ${firstChannel.channel}` : '(ch not set)'
   const coord = plan.communication?.outOfStateCoordinatorName
   const coordPhone = plan.communication?.outOfStateCoordinatorPhone
   const dayThreshold = plan.convergencePlan?.convergenceDayThreshold ?? 3
 
-  // Root diamond
-  const ROOT_X = W / 2
-  const ROOT_Y = 70
+  const infoLine = (
+    <p style={{ fontSize: '8pt', textAlign: 'center', color: '#444', margin: '0 0 4pt 0' }}>
+      Hub: <strong>{hubShort}</strong>
+      {coord && <> · Coordinator: <strong>{coord}</strong>{coordPhone && ` · ${coordPhone}`}</>}
+      · FRS: <strong>{channel}</strong> · Check-in: 8am / 12pm / 6pm
+    </p>
+  )
 
-  // Horizontal spine Y (connects root to branch tops)
-  const SPINE_Y = 148
-  const BRANCH_TOP = COL_START_Y  // top of branch diamonds (= 185)
+  const legend = (
+    <div style={{ fontSize: '7.5pt', textAlign: 'center', marginBottom: '4pt' }}>
+      <span style={{ border: '1.5pt solid #000', padding: '1pt 5pt', marginRight: '8pt' }}>monitor / shelter</span>
+      <span style={{ outline: '1pt solid #000', border: '2.5pt double #000', padding: '1pt 5pt', marginRight: '8pt' }}>activate rally</span>
+      <span style={{ border: '1.5pt dashed #000', padding: '1pt 5pt' }}>critical / evacuate</span>
+    </div>
+  )
 
-  // ── Per-column node Y positions ──────────────────────────────────────────────
-  // Tornado column (col 0)
-  const T_D1_Y  = BRANCH_TOP          // "Tornado warning?"
-  const T_D2_Y  = BRANCH_TOP + 90     // "Basement available?"
-  const T_A1_Y  = BRANCH_TOP + 178    // shelter action
-  const T_A2_Y  = BRANCH_TOP + 238    // mobile home action
+  const pageBreak: React.CSSProperties = { pageBreakBefore: 'always', breakBefore: 'page', paddingTop: '0.1in' }
 
-  // Flood column (col 1)
-  const FL_D1_Y  = BRANCH_TOP
-  const FL_D2_Y  = BRANCH_TOP + 90
-  const FL_A1_Y  = BRANCH_TOP + 178
-  const FL_A2_Y  = BRANCH_TOP + 238
+  // ── Page 1: House Fire · Carbon Monoxide · Tornado ───────────────────────
 
-  // Power column (col 2)
-  const PW_D1_Y  = BRANCH_TOP
-  const PW_D2_Y  = BRANCH_TOP + 90
-  const PW_A1_Y  = BRANCH_TOP + 178
-  const PW_A2_Y  = BRANCH_TOP + 252
+  const Page1 = () => {
+    const mid = 'arr-p1'
+    return (
+      <PageSVG>
+        <Defs id={mid} />
+        <PageHeader title="Part 1 of 3 — Immediate Threats" markerId={mid}
+          colLabels={['🔥 House Fire', '💨 Carbon Monoxide', '🌪 Tornado']} />
 
-  // Phones column (col 3)
-  const PH_D1_Y  = BRANCH_TOP
-  const PH_D2_Y  = BRANCH_TOP + 90
-  const PH_A1_Y  = BRANCH_TOP + 178
-  const PH_A2_Y  = BRANCH_TOP + 252
+        {/* House Fire */}
+        <Diamond cx={PC[0]} cy={D1_Y} label="Smoke alarm" sub="or fire?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D1_Y + DH} x2={PC[0]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[0]} cy={D2_Y} label="Everyone" sub="out of building?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D2_Y + DH} x2={PC[0]} y2={A1_Y - BH / 2} label="YES" />
+        <Box cx={PC[0]} cy={A1_Y} urgency="shelter"
+          label="Call 911. Stay outside." sub="Do NOT re-enter for any reason." />
+        <Arr markerId={mid} x1={PC[0]} y1={A1_Y + BH / 2} x2={PC[0]} y2={A2_Y - BHT / 2} label="NO" />
+        <Box cx={PC[0]} cy={A2_Y} urgency="evac" h={BHT}
+          label="GET OUT NOW" sub="Low to floor · close doors behind you · meet outside." />
 
-  // Civil unrest column (col 4)
-  const CU_D1_Y  = BRANCH_TOP
-  const CU_D2_Y  = BRANCH_TOP + 90
-  const CU_A1_Y  = BRANCH_TOP + 178
-  const CU_A2_Y  = BRANCH_TOP + 252
+        {/* Carbon Monoxide */}
+        <Diamond cx={PC[1]} cy={D1_Y} label="CO alarm or" sub="dizziness/nausea?" />
+        <Arr markerId={mid} x1={PC[1]} y1={D1_Y + DH} x2={PC[1]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[1]} cy={D2_Y} label="Everyone" sub="outside?" />
+        <Arr markerId={mid} x1={PC[1]} y1={D2_Y + DH} x2={PC[1]} y2={A1_Y - BH / 2} label="YES" />
+        <Box cx={PC[1]} cy={A1_Y} urgency="shelter"
+          label="Call 911. Stay outside." sub="Await fire dept. clearance." />
+        <Arr markerId={mid} x1={PC[1]} y1={A1_Y + BH / 2} x2={PC[1]} y2={A2_Y - BHT / 2} label="NO" />
+        <Box cx={PC[1]} cy={A2_Y} urgency="evac" h={BHT}
+          label="GET EVERYONE OUT" sub="CO is odorless · symptoms = poisoning." />
 
-  // House fire column (col 5)
-  const HF_D1_Y  = BRANCH_TOP
-  const HF_D2_Y  = BRANCH_TOP + 90
-  const HF_A1_Y  = BRANCH_TOP + 178
-  const HF_A2_Y  = BRANCH_TOP + 252
+        {/* Tornado */}
+        <Diamond cx={PC[2]} cy={D1_Y} label="Tornado" sub="WARNING issued?" />
+        <Arr markerId={mid} x1={PC[2]} y1={D1_Y + DH} x2={PC[2]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[2]} cy={D2_Y} label="Basement" sub="available?" />
+        <Arr markerId={mid} x1={PC[2]} y1={D2_Y + DH} x2={PC[2]} y2={A1_Y - BH / 2} label="YES" />
+        <Box cx={PC[2]} cy={A1_Y} urgency="shelter"
+          label="Basement → interior wall" sub="Away from windows · cover infant." />
+        <Arr markerId={mid} x1={PC[2]} y1={A1_Y + BH / 2} x2={PC[2]} y2={A2_Y - BHT / 2} label="NO" />
+        <Box cx={PC[2]} cy={A2_Y} urgency="evac" h={BHT}
+          label="Mobile home: LEAVE NOW" sub="Nearest sturdy structure." />
+      </PageSVG>
+    )
+  }
 
-  // Away from home — spans bottom across all cols
-  const AWAY_Y = BRANCH_TOP + 370
+  // ── Page 2: Flooding · Power Out · No Comms ──────────────────────────────
 
-  const c = COLS  // shorthand
+  const Page2 = () => {
+    const mid = 'arr-p2'
+    return (
+      <PageSVG>
+        <Defs id={mid} />
+        <PageHeader title="Part 2 of 3 — Weather &amp; Infrastructure" markerId={mid}
+          colLabels={['🌊 Flooding', '⚡ Power Out', '📵 No Comms']} />
 
-  return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', color: '#000', padding: '0.15in' }}>
-      <h1 style={{ fontSize: '18pt', fontWeight: 700, margin: '0 0 2pt 0', textAlign: 'center' }}>
-        {plan.planName} — Emergency Decision Flowchart
-      </h1>
-      <p style={{ fontSize: '8pt', textAlign: 'center', color: '#444', margin: '0 0 4pt 0' }}>
-        Hub: <strong>{hubShort}</strong>
-        {coord && <> · Coordinator: <strong>{coord}</strong>{coordPhone && ` · ${coordPhone}`}</>}
-        · Family Radio Service (FRS): <strong>{channel}</strong> · Check-in: 8am / 12pm / 6pm
-      </p>
+        {/* Flooding */}
+        <Diamond cx={PC[0]} cy={D1_Y} label="Water rising" sub="or flood warning?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D1_Y + DH} x2={PC[0]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[0]} cy={D2_Y} label="Threatening" sub="first floor?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D2_Y + DH} x2={PC[0]} y2={A1_Y - BHT / 2} label="YES" />
+        <Box cx={PC[0]} cy={A1_Y} urgency="evac" h={BHT}
+          label="Go-bag → high-ground route" sub={`→ ${hubShort}`} />
+        <Arr markerId={mid} x1={PC[0]} y1={A1_Y + BHT / 2} x2={PC[0]} y2={A2_Y - BH / 2} label="NO" />
+        <Box cx={PC[0]} cy={A2_Y} urgency="shelter"
+          label="Move valuables up. Monitor." sub="Don't drive through any water." />
 
-      <div style={{ fontSize: '8pt', textAlign: 'center', marginBottom: '4pt' }}>
-        <span style={{ border: '1.5pt solid #000', padding: '1pt 5pt', marginRight: '8pt' }}>monitor / shelter</span>
-        <span style={{ outline: '1pt solid #000', border: '2.5pt double #000', padding: '1pt 5pt', marginRight: '8pt' }}>activate rally</span>
-        <span style={{ border: '1.5pt dashed #000', padding: '1pt 5pt' }}>critical / evacuate</span>
-      </div>
+        {/* Power Out */}
+        <Diamond cx={PC[1]} cy={D1_Y} label="Power out" sub="no ETA?" />
+        <Arr markerId={mid} x1={PC[1]} y1={D1_Y + DH} x2={PC[1]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[1]} cy={D2_Y} label="Day 3+ no heat" sub="or AC in extreme?" />
+        <Arr markerId={mid} x1={PC[1]} y1={D2_Y + DH} x2={PC[1]} y2={A1_Y - BH / 2} label="NO" />
+        <Box cx={PC[1]} cy={A1_Y} urgency="shelter"
+          label="Shelter in place. Conserve." sub="Generator: outdoors only — never garage." />
+        <Arr markerId={mid} x1={PC[1]} y1={A1_Y + BH / 2} x2={PC[1]} y2={A2_Y - BHT / 2} label="YES" />
+        <Box cx={PC[1]} cy={A2_Y} urgency="rally" h={BHT}
+          label="Activate rally protocol" sub={`→ ${hubShort}`} />
 
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
+        {/* No Comms */}
+        <Diamond cx={PC[2]} cy={D1_Y} label="Phones &amp;" sub="internet down?" />
+        <Arr markerId={mid} x1={PC[2]} y1={D1_Y + DH} x2={PC[2]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[2]} cy={D2_Y} label="Contact made" sub="within 4 hours?" />
+        <Arr markerId={mid} x1={PC[2]} y1={D2_Y + DH} x2={PC[2]} y2={A1_Y - BH / 2} label="NO" />
+        <Box cx={PC[2]} cy={A1_Y} urgency="shelter"
+          label={`FRS ${channel} check-ins`} sub="8am / 12pm / 6pm. Try landline." />
+        <Arr markerId={mid} x1={PC[2]} y1={A1_Y + BH / 2} x2={PC[2]} y2={A2_Y - BHT / 2} label="4-hr rule" />
+        <Box cx={PC[2]} cy={A2_Y} urgency="rally" h={BHT}
+          label="4-hour rule triggered" sub={`Go-bag → ${hubShort}`} />
+      </PageSVG>
+    )
+  }
+
+  // ── Page 3: Civil Unrest (left) + Away From Home (right) ─────────────────
+
+  const PAGE3_SVG_H = SVG_H + 120  // taller to fit away section
+  const AWAY_DIVIDER = SVG_H - 16
+  const AWAY_Y = AWAY_DIVIDER + 30
+
+  // Civil unrest takes col 0; away section spans cols 1+2 area
+  const AWAY_LEFT = PC[1] - P_COL_W / 2 - 10
+  const AWAY_W_TOTAL = SVG_W - AWAY_LEFT - P_MARGIN
+  const AW_THIRD = AWAY_W_TOTAL / 3
+  const AW_CX = [AWAY_LEFT + AW_THIRD / 2, AWAY_LEFT + AW_THIRD * 1.5, AWAY_LEFT + AW_THIRD * 2.5]
+  const AW_BW = AW_THIRD - 14
+  const AW_BH = 76
+
+  const Page3 = () => {
+    const mid = 'arr-p3'
+    return (
+      <svg viewBox={`0 0 ${SVG_W} ${PAGE3_SVG_H}`}
         style={{ width: '100%', height: 'auto', display: 'block' }}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <ArrowMarker />
+        xmlns="http://www.w3.org/2000/svg">
+        <Defs id={mid} />
 
-        {/* Root diamond */}
-        <Diamond cx={ROOT_X} cy={ROOT_Y} label="WHAT IS" sub="HAPPENING?" size={44} />
+        {/* Title */}
+        <text x={SVG_W / 2} y={SPINE_Y + 5} textAnchor="middle"
+          fontSize="11" fontWeight="700" fontFamily="system-ui, sans-serif">
+          Part 3 of 3 — Civil Unrest &amp; Away-From-Home Protocols
+        </text>
+        <line x1={PC[0] - P_COL_W / 2} y1={SPINE_Y + 12} x2={SVG_W - P_MARGIN} y2={SPINE_Y + 12}
+          stroke="#000" strokeWidth="0.8" />
 
-        {/* Horizontal spine */}
-        <line x1={c[0]} y1={SPINE_Y} x2={c[5]} y2={SPINE_Y} stroke="#000" strokeWidth="1.2" />
+        {/* Column labels */}
+        <text x={PC[0]} y={LABEL_Y} textAnchor="middle" fontSize="10" fontWeight="700"
+          fontFamily="system-ui, sans-serif">⚠️ Civil Unrest</text>
+        <Arr markerId={mid} x1={PC[0]} y1={LABEL_Y + 8} x2={PC[0]} y2={D1_Y - DH - 2} />
 
-        {/* Vertical drops from spine to branch tops */}
-        {c.map((cx, i) => (
-          <Arrow key={i} x1={cx} y1={SPINE_Y} x2={cx} y2={BRANCH_TOP - DIAMOND_HALF - 2} />
-        ))}
-        {/* Root drops to spine */}
-        <Arrow x1={ROOT_X} y1={ROOT_Y + 44} x2={ROOT_X} y2={SPINE_Y} />
-
-        {/* ── Column labels ── */}
-        {['🌪 Tornado', '🌊 Flooding', '⚡ Power Out', '📵 No Comms', '⚠️ Civil Unrest', '🔥 House Fire'].map((lbl, i) => (
-          <text key={i} x={c[i]} y={SPINE_Y + 10} textAnchor="middle"
-            fontSize="8" fontWeight="700" fontFamily="system-ui, sans-serif">{lbl}</text>
-        ))}
-
-        {/* ══ COL 0: TORNADO ══ */}
-        <Diamond cx={c[0]} cy={T_D1_Y} label="Tornado" sub="warning?" />
-        <Arrow x1={c[0]} y1={T_D1_Y + DIAMOND_HALF} x2={c[0]} y2={T_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[0]} cy={T_D2_Y} label="Basement" sub="available?" />
-        <Arrow x1={c[0]} y1={T_D2_Y + DIAMOND_HALF} x2={c[0]} y2={T_A1_Y - BOX_H / 2} label="YES" />
-        <ActionBox cx={c[0]} cy={T_A1_Y} urgency="shelter"
-          label="Basement → interior wall" sub="away from windows. Cover infant." />
-        <Arrow x1={c[0]} y1={T_A1_Y + BOX_H / 2} x2={c[0]} y2={T_A2_Y - BOX_H / 2} label="NO" />
-        <ActionBox cx={c[0]} cy={T_A2_Y} urgency="evac"
-          label="Mobile home: LEAVE NOW" sub="Go to nearest sturdy structure." />
-
-        {/* ══ COL 1: FLOODING ══ */}
-        <Diamond cx={c[1]} cy={FL_D1_Y} label="Water rising" sub="or warning?" />
-        <Arrow x1={c[1]} y1={FL_D1_Y + DIAMOND_HALF} x2={c[1]} y2={FL_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[1]} cy={FL_D2_Y} label="Threatening" sub="first floor?" />
-        <Arrow x1={c[1]} y1={FL_D2_Y + DIAMOND_HALF} x2={c[1]} y2={FL_A1_Y - BOX_H / 2} label="YES" />
-        <ActionBox cx={c[1]} cy={FL_A1_Y} urgency="evac"
-          label="Go-bag → high-ground route" sub={`→ ${hubShort}`} h={BOX_H_TALL} />
-        <Arrow x1={c[1]} y1={FL_A1_Y + BOX_H_TALL / 2} x2={c[1]} y2={FL_A2_Y - BOX_H / 2} label="NO" />
-        <ActionBox cx={c[1]} cy={FL_A2_Y} urgency="shelter"
-          label="Move valuables up. Monitor." sub="Don't drive through water." />
-
-        {/* ══ COL 2: POWER OUT ══ */}
-        <Diamond cx={c[2]} cy={PW_D1_Y} label="Power out" sub="no ETA?" />
-        <Arrow x1={c[2]} y1={PW_D1_Y + DIAMOND_HALF} x2={c[2]} y2={PW_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[2]} cy={PW_D2_Y} label="Electric vehicle" sub="can't reach hub?" />
-        <Arrow x1={c[2]} y1={PW_D2_Y + DIAMOND_HALF} x2={c[2]} y2={PW_A1_Y - BOX_H / 2} label="YES" />
-        <ActionBox cx={c[2]} cy={PW_A1_Y} urgency="rally"
-          label="Electric vehicle pickup needed" sub={`FRS ${channel} to coordinate.`} />
-        <Arrow x1={c[2]} y1={PW_A1_Y + BOX_H / 2} x2={c[2]} y2={PW_A2_Y - BOX_H_TALL / 2} label="Day 3+" />
-        <ActionBox cx={c[2]} cy={PW_A2_Y} urgency="rally"
-          label="Activate rally protocol" sub={`→ ${hubShort}`} h={BOX_H_TALL} />
-
-        {/* ══ COL 3: PHONES DOWN ══ */}
-        <Diamond cx={c[3]} cy={PH_D1_Y} label="Phones &" sub="internet down?" />
-        <Arrow x1={c[3]} y1={PH_D1_Y + DIAMOND_HALF} x2={c[3]} y2={PH_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[3]} cy={PH_D2_Y} label="Contact made" sub="within 4 hours?" />
-        <Arrow x1={c[3]} y1={PH_D2_Y + DIAMOND_HALF} x2={c[3]} y2={PH_A1_Y - BOX_H / 2} label="NO" />
-        <ActionBox cx={c[3]} cy={PH_A1_Y} urgency="shelter"
-          label={`FRS ${channel} — check-ins`} sub="8am / 12pm / 6pm. Try landline." />
-        <Arrow x1={c[3]} y1={PH_A1_Y + BOX_H / 2} x2={c[3]} y2={PH_A2_Y - BOX_H_TALL / 2} label="4-hr rule" />
-        <ActionBox cx={c[3]} cy={PH_A2_Y} urgency="rally"
-          label="4-hour rule triggered" sub={`Go-bag → ${hubShort}`} h={BOX_H_TALL} />
-
-        {/* ══ COL 4: CIVIL UNREST ══ */}
-        <Diamond cx={c[4]} cy={CU_D1_Y} label="Civil unrest" sub="nearby?" />
-        <Arrow x1={c[4]} y1={CU_D1_Y + DIAMOND_HALF} x2={c[4]} y2={CU_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[4]} cy={CU_D2_Y} label="Within 1 mile" sub="of your location?" />
-        <Arrow x1={c[4]} y1={CU_D2_Y + DIAMOND_HALF} x2={c[4]} y2={CU_A1_Y - BOX_H / 2} label="NO" />
-        <ActionBox cx={c[4]} cy={CU_A1_Y} urgency="shelter"
-          label="Lock doors. Lights low." sub="Interior room. Monitor." />
-        <Arrow x1={c[4]} y1={CU_A1_Y + BOX_H / 2} x2={c[4]} y2={CU_A2_Y - BOX_H_TALL / 2} label="YES / threat" />
-        <ActionBox cx={c[4]} cy={CU_A2_Y} urgency="evac"
-          label="Leave via county roads" sub={`Avoid main corridors → ${hubShort}`} h={BOX_H_TALL} />
-
-        {/* ══ COL 5: HOUSE FIRE ══ */}
-        <Diamond cx={c[5]} cy={HF_D1_Y} label="House fire" sub="or smoke?" />
-        <Arrow x1={c[5]} y1={HF_D1_Y + DIAMOND_HALF} x2={c[5]} y2={HF_D2_Y - DIAMOND_HALF} label="YES" />
-        <Diamond cx={c[5]} cy={HF_D2_Y} label="Everyone" sub="out of building?" />
-        <Arrow x1={c[5]} y1={HF_D2_Y + DIAMOND_HALF} x2={c[5]} y2={HF_A1_Y - BOX_H / 2} label="YES" />
-        <ActionBox cx={c[5]} cy={HF_A1_Y} urgency="shelter"
-          label="Call 911. Stay outside." sub="Do NOT re-enter." />
-        <Arrow x1={c[5]} y1={HF_A1_Y + BOX_H / 2} x2={c[5]} y2={HF_A2_Y - BOX_H / 2} label="NO" />
-        <ActionBox cx={c[5]} cy={HF_A2_Y} urgency="evac"
-          label="GET OUT NOW" sub="Close doors. Low to floor." />
-
-        {/* ══ AWAY FROM HOME (full-width bottom section) ══ */}
-        <line x1={35} y1={AWAY_Y - 20} x2={W - 35} y2={AWAY_Y - 20} stroke="#000" strokeWidth="1" strokeDasharray="4 4" />
-        <text x={W / 2} y={AWAY_Y - 8} textAnchor="middle" fontSize="9" fontWeight="700"
+        <text x={AWAY_LEFT + AWAY_W_TOTAL / 2} y={LABEL_Y} textAnchor="middle" fontSize="10" fontWeight="700"
           fontFamily="system-ui, sans-serif">NOT AT HOME WHEN EMERGENCY OCCURS</text>
+        <line x1={AWAY_LEFT} y1={LABEL_Y + 10} x2={SVG_W - P_MARGIN} y2={LABEL_Y + 10}
+          stroke="#555" strokeWidth="0.8" strokeDasharray="4 3" />
 
-        {/* Three away sub-columns */}
-        {/* Local (work/school) */}
-        <ActionBox cx={W * 0.18} cy={AWAY_Y + 55} urgency="shelter" w={230} h={66}
-          label="At work / school (local)"
-          sub="Shelter at workplace. Route to hub—not home." />
+        {/* Civil Unrest column */}
+        <Diamond cx={PC[0]} cy={D1_Y} label="Civil unrest" sub="nearby?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D1_Y + DH} x2={PC[0]} y2={D2_Y - DH} label="YES" />
+        <Diamond cx={PC[0]} cy={D2_Y} label="Within 1 mi" sub="of your location?" />
+        <Arr markerId={mid} x1={PC[0]} y1={D2_Y + DH} x2={PC[0]} y2={A1_Y - BH / 2} label="NO" />
+        <Box cx={PC[0]} cy={A1_Y} urgency="shelter"
+          label="Lock doors. Lights low." sub="Interior room. Monitor official channels." />
+        <Arr markerId={mid} x1={PC[0]} y1={A1_Y + BH / 2} x2={PC[0]} y2={A2_Y - BHT / 2} label="YES / threat" />
+        <Box cx={PC[0]} cy={A2_Y} urgency="evac" h={BHT}
+          label="Leave via county roads only" sub={`Avoid main corridors → ${hubShort}`} />
+
+        {/* Divider before away section */}
+        <line x1={35} y1={AWAY_DIVIDER} x2={SVG_W - 35} y2={AWAY_DIVIDER}
+          stroke="#000" strokeWidth="1" strokeDasharray="5 3" />
+
+        {/* Away from home sub-columns */}
+        {/* Local */}
+        <text x={AW_CX[0]} y={AWAY_Y - 2} textAnchor="middle" fontSize="9.5" fontWeight="700"
+          fontFamily="system-ui, sans-serif">At work / school (local)</text>
+        <rect x={AW_CX[0] - AW_BW / 2} y={AWAY_Y + 10} width={AW_BW} height={AW_BH}
+          fill="#fff" stroke="#000" strokeWidth="1.5" rx="3" />
+        <text x={AW_CX[0]} y={AWAY_Y + 10 + AW_BH * 0.3} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">Shelter at workplace.</text>
+        <text x={AW_CX[0]} y={AWAY_Y + 10 + AW_BH * 0.55} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">Route to hub — not home.</text>
+        <text x={AW_CX[0]} y={AWAY_Y + 10 + AW_BH * 0.8} textAnchor="middle" dominantBaseline="middle"
+          fontSize="9" fontFamily="system-ui, sans-serif" fill="#555">{hubShort}</text>
 
         {/* In-state */}
-        <ActionBox cx={W * 0.5} cy={AWAY_Y + 55} urgency="rally" w={230} h={66}
-          label="Traveling in-state"
-          sub={`< 50 mi: go to hub → ${hubShort}`} />
-        <ActionBox cx={W * 0.5} cy={AWAY_Y + 143} urgency="shelter" w={230} h={44}
-          label="> 50 mi: STAY PUT"
-          sub={coord ? `Call ${coord}` : 'Call a family contact outside the area'} />
+        <text x={AW_CX[1]} y={AWAY_Y - 2} textAnchor="middle" fontSize="9.5" fontWeight="700"
+          fontFamily="system-ui, sans-serif">Traveling in-state</text>
+        <rect x={AW_CX[1] - AW_BW / 2} y={AWAY_Y + 10} width={AW_BW} height={AW_BH}
+          fill="none" stroke="#000" strokeWidth="1" />
+        <rect x={AW_CX[1] - AW_BW / 2 + 3} y={AWAY_Y + 13} width={AW_BW - 6} height={AW_BH - 6}
+          fill="#fff" stroke="#000" strokeWidth="1.5" rx="3" />
+        <text x={AW_CX[1]} y={AWAY_Y + 10 + AW_BH * 0.3} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">{'< 50 mi: go to hub.'}</text>
+        <text x={AW_CX[1]} y={AWAY_Y + 10 + AW_BH * 0.55} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">{'> 50 mi: STAY PUT.'}</text>
+        <text x={AW_CX[1]} y={AWAY_Y + 10 + AW_BH * 0.8} textAnchor="middle" dominantBaseline="middle"
+          fontSize="9" fontFamily="system-ui, sans-serif" fill="#555">
+          {coord ? `Call ${coord}` : 'Call family contact outside area'}
+        </text>
 
         {/* Out of state */}
-        <ActionBox cx={W * 0.82} cy={AWAY_Y + 55} urgency="shelter" w={230} h={66}
-          label="Out of state"
-          sub="DO NOT drive into disaster zone. Stay put." />
+        <text x={AW_CX[2]} y={AWAY_Y - 2} textAnchor="middle" fontSize="9.5" fontWeight="700"
+          fontFamily="system-ui, sans-serif">Out of state</text>
+        <rect x={AW_CX[2] - AW_BW / 2} y={AWAY_Y + 10} width={AW_BW} height={AW_BH}
+          fill="#fff" stroke="#000" strokeWidth="1.5" rx="3" />
+        <text x={AW_CX[2]} y={AWAY_Y + 10 + AW_BH * 0.3} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">DO NOT drive into zone.</text>
+        <text x={AW_CX[2]} y={AWAY_Y + 10 + AW_BH * 0.55} textAnchor="middle" dominantBaseline="middle"
+          fontSize="10" fontFamily="system-ui, sans-serif">Stay put. Stay safe.</text>
         {coord && (
-          <ActionBox cx={W * 0.82} cy={AWAY_Y + 143} urgency="shelter" w={230} h={44}
-            label={`Call ${coord}`}
-            sub={coordPhone ?? 'out-of-state coordinator'} />
+          <text x={AW_CX[2]} y={AWAY_Y + 10 + AW_BH * 0.8} textAnchor="middle" dominantBaseline="middle"
+            fontSize="9" fontFamily="system-ui, sans-serif" fill="#555">
+            {`Call ${coord}${coordPhone ? ` · ${coordPhone}` : ''}`}
+          </text>
         )}
       </svg>
+    )
+  }
 
-      {/* Footer */}
-      <div style={{ marginTop: '6pt', borderTop: '2pt solid #000', paddingTop: '4pt',
-        display: 'flex', justifyContent: 'space-between', fontSize: '8.5pt' }}>
-        <span>
-          <strong>After Day {dayThreshold}:</strong> all clusters converge at {convAddr}.
-        </span>
-        <span>
-          <strong>4-Hour Rule:</strong> no contact for 4 hrs after trying all methods → activate rally.
-        </span>
-        {coord && (
-          <span>
-            <strong>Coordinator:</strong> {coord}{coordPhone && ` · ${coordPhone}`}
-          </span>
-        )}
+  const footer = (
+    <div style={{ marginTop: '4pt', borderTop: '1.5pt solid #000', paddingTop: '3pt',
+      display: 'flex', justifyContent: 'space-between', fontSize: '8pt' }}>
+      <span><strong>After Day {dayThreshold}:</strong> converge at {convAddr}.</span>
+      <span><strong>4-Hour Rule:</strong> no contact after 4 hrs via all methods → activate rally.</span>
+      {coord && <span><strong>Coordinator:</strong> {coord}{coordPhone && ` · ${coordPhone}`}</span>}
+    </div>
+  )
+
+  return (
+    <div style={{ fontFamily: 'system-ui, sans-serif', color: '#000', padding: '0.1in' }}>
+      <h1 style={{ fontSize: '16pt', fontWeight: 700, margin: '0 0 2pt 0', textAlign: 'center' }}>
+        {plan.planName} — Emergency Decision Flowchart
+      </h1>
+      {infoLine}
+      {legend}
+      <Page1 />
+
+      <div style={pageBreak}>
+        {infoLine}
+        {legend}
+        <Page2 />
+      </div>
+
+      <div style={pageBreak}>
+        {infoLine}
+        {legend}
+        <Page3 />
+        {footer}
       </div>
     </div>
   )

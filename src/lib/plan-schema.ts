@@ -7,7 +7,7 @@ const AwayCategorySchema = z.enum(['local', 'in-state', 'out-of-state'])
 const SupplyStatusSchema = z.enum(['have', 'need', 'na'])
 const ScenarioIdSchema = z.enum([
   'tornado', 'power-outage', 'winter-storm', 'flooding',
-  'forced-evacuation', 'telecom-failure', 'civil-unrest', 'earthquake', 'house-fire',
+  'forced-evacuation', 'telecom-failure', 'civil-unrest', 'earthquake', 'house-fire', 'carbon-monoxide',
 ])
 
 const VehicleSchema = z.object({
