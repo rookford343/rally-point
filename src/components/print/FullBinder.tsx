@@ -119,7 +119,22 @@ export function FullBinder() {
         )}
 
         {plan.communication?.hasMeshtastic && (
-          <p style={{ fontSize: '10pt' }}>Meshtastic: {plan.communication.meshtasticNodes ?? 0} node(s)</p>
+          <>
+            <h2 style={h2Style}>Meshtastic / LoRa Mesh Radio</h2>
+            <p style={{ fontSize: '10pt' }}>
+              <strong>Nodes:</strong> {plan.communication.meshtasticNodes ?? 0}
+              {plan.communication.meshtasticChannelName && (
+                <> · <strong>Channel:</strong> <span style={{ fontFamily: 'monospace' }}>{plan.communication.meshtasticChannelName}</span></>
+              )}
+              {plan.communication.meshtasticEncryptionEnabled !== undefined && (
+                <> · Encryption: {plan.communication.meshtasticEncryptionEnabled ? 'on' : 'off'}</>
+              )}
+            </p>
+            <p style={{ fontSize: '10pt' }}>
+              No internet or cell signal required. In a telecom failure, send position + status on your shared channel.
+              Range: 1–10+ miles depending on terrain. All nodes relay messages automatically.
+            </p>
+          </>
         )}
         {plan.communication?.hasHamRadio && plan.communication.hamCallsign && (
           <p style={{ fontSize: '10pt' }}>Ham callsign: <strong>{plan.communication.hamCallsign}</strong></p>
@@ -358,23 +373,72 @@ export function FullBinder() {
         </table>
       </div>
 
-      {/* ── TAB 8: Documents cache reminder ─────────────────────────── */}
+      {/* ── TAB 8: Documents cache ──────────────────────────────────── */}
       <div className="print-break-before" style={sectionStyle}>
         <div style={tabHeader}>TAB 8 — CRITICAL DOCUMENTS CACHE</div>
         <h1 style={h1Style}>Critical Documents Cache</h1>
-        <p>Keep a single waterproof envelope with the following — at home AND a digital copy with the out-of-state coordinator:</p>
-        <ul>
-          <li>Photo IDs and passports (color copies)</li>
-          <li>Insurance cards: health, home, auto</li>
-          <li>Most recent insurance declarations page (home/auto)</li>
-          <li>Vaccination records (people and pets)</li>
-          <li>Printed medication list with prescriber + pharmacy</li>
-          <li>Bank account list with bank name + last 4 of account</li>
-          <li>Lease or deed copy</li>
-          <li>Vehicle title copies</li>
-          <li>Will / power of attorney summary page</li>
-          <li>Important contacts (printed and laminated)</li>
-        </ul>
+
+        {plan.documentsPlan ? (
+          <>
+            {plan.documentsPlan.storageLocation && (
+              <p style={{ fontSize: '12pt', fontWeight: 700 }}>
+                Storage location: {plan.documentsPlan.storageLocation}
+              </p>
+            )}
+            {plan.documentsPlan.protectionMethods.length > 0 && (
+              <p style={{ fontSize: '10pt', marginBottom: '8pt' }}>
+                Protection: {plan.documentsPlan.protectionMethods.join(' · ')}
+              </p>
+            )}
+            {plan.documentsPlan.digitalBackupLocation && (
+              <p style={{ fontSize: '10pt', marginBottom: '8pt' }}>
+                Digital backup: {plan.documentsPlan.digitalBackupLocation}
+              </p>
+            )}
+            {['IDs', 'Insurance', 'Financial', 'Property', 'Medical', 'Legal', 'Contacts'].map(cat => {
+              const catItems = plan.documentsPlan!.items.filter(i => i.category === cat && i.status !== 'na')
+              if (catItems.length === 0) return null
+              return (
+                <div key={cat} style={{ marginBottom: '8pt' }}>
+                  <h3 style={h3Style}>{cat}</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10pt' }}>
+                    <tbody>
+                      {catItems.map(item => (
+                        <tr key={item.id}>
+                          <td style={{ padding: '2pt 6pt', borderBottom: '0.5pt dotted #ccc', width: '70%' }}>
+                            {item.name}
+                          </td>
+                          <td style={{ padding: '2pt 6pt', borderBottom: '0.5pt dotted #ccc', width: '15%', fontWeight: item.status === 'have' ? 400 : 700 }}>
+                            {item.status === 'have' ? '✓' : 'NEEDED'}
+                          </td>
+                          <td style={{ padding: '2pt 6pt', borderBottom: '0.5pt dotted #ccc', width: '15%', fontSize: '9pt', color: '#444' }}>
+                            {item.digitalCopy ? 'digital ✓' : ''}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          <>
+            <p>Keep a single waterproof envelope with the following — at home AND a digital copy with your out-of-state coordinator:</p>
+            <ul>
+              <li>Photo IDs and passports (color copies)</li>
+              <li>Insurance cards: health, home, auto</li>
+              <li>Most recent insurance declarations page (home/auto)</li>
+              <li>Vaccination records (people and pets)</li>
+              <li>Printed medication list with prescriber + pharmacy</li>
+              <li>Bank account list with bank name + last 4 of account</li>
+              <li>Lease or deed copy</li>
+              <li>Vehicle title copies</li>
+              <li>Will / power of attorney summary page</li>
+              <li>Important contacts (printed and laminated)</li>
+            </ul>
+          </>
+        )}
       </div>
 
       {/* ── TAB 9: Resource access guide ────────────────────────────── */}
@@ -404,6 +468,13 @@ export function FullBinder() {
         <h2 style={h2Style}>If Comms Stay Down</h2>
         <ul>
           <li>Family Radio Service (FRS) check-ins at the times listed in Tab 1.</li>
+          {plan.communication?.hasMeshtastic && (
+            <li>
+              Meshtastic mesh: send position + status on channel{' '}
+              <strong>{plan.communication.meshtasticChannelName ?? 'your configured channel'}</strong>.
+              No internet or cell towers required.
+            </li>
+          )}
           <li>Local AM radio is the most resilient broadcast medium.</li>
           <li>4-hour rule: no contact → cluster hub.</li>
         </ul>

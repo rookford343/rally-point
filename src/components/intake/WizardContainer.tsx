@@ -10,6 +10,7 @@ import { DepartureSignalStep } from './DepartureSignalStep'
 import { PassphraseStep } from './PassphraseStep'
 import { SuppliesStep } from './SuppliesStep'
 import { PrepInventoryStep } from './PrepInventoryStep'
+import { DocumentsStep } from './DocumentsStep'
 import { ReviewStep } from './ReviewStep'
 
 const STEPS = [
@@ -24,6 +25,7 @@ const STEPS = [
   { label: 'Passphrase', component: PassphraseStep },
   { label: 'Supplies', component: SuppliesStep },
   { label: 'Inventory', component: PrepInventoryStep },
+  { label: 'Documents', component: DocumentsStep },
   { label: 'Review & Generate', component: ReviewStep },
 ]
 

@@ -13,9 +13,10 @@ import type {
   PrepInventoryItem,
   EVCoordination,
   UnitRoute,
+  DocumentsPlan,
 } from '../types/plan'
 
-const CURRENT_VERSION = 2
+const CURRENT_VERSION = 3
 
 function defaultPlan(): FamilyPlan {
   return {
@@ -75,6 +76,8 @@ interface FamilyPlanStore {
   setUnitRoutes: (routes: UnitRoute[]) => void
   setUnitCoords: (unitId: string, lat: number, lng: number) => void
   setRallyPointCoords: (rpId: string, lat: number, lng: number) => void
+  // Documents
+  setDocumentsPlan: (dp: DocumentsPlan) => void
   // Sensitive inventory is stored in a separate localStorage key (see storage.ts)
   // Load a complete plan (used by demo mode)
   loadPlan: (plan: FamilyPlan) => void
@@ -190,6 +193,9 @@ export const useFamilyPlan = create<FamilyPlanStore>()(
           }),
         })),
 
+      setDocumentsPlan: (dp) =>
+        set(s => ({ plan: touch({ ...s.plan, documentsPlan: dp }) })),
+
       loadPlan: (plan) => set({ plan }),
 
       resetPlan: () => set({ plan: defaultPlan() }),
@@ -205,7 +211,28 @@ export const useFamilyPlan = create<FamilyPlanStore>()(
         }
         if (version === 1) {
           // unitRoutes was added in v2 — backfill for existing stored plans
-          return { plan: { ...state.plan, unitRoutes: state.plan.unitRoutes ?? [] } }
+          return {
+            plan: {
+              ...state.plan,
+              unitRoutes: state.plan.unitRoutes ?? [],
+            },
+          }
+        }
+        if (version === 2) {
+          // documentsPlan added in v3 — backfill; preserve "complete" status for existing 12-step plans
+          const completedSteps = state.plan.completedSteps ?? []
+          const wasComplete = completedSteps.length >= 12
+          return {
+            plan: {
+              ...state.plan,
+              unitRoutes: state.plan.unitRoutes ?? [],
+              documentsPlan: undefined,
+              // Add step 12 (new Review index) to keep dashboard access for users who had finished
+              completedSteps: wasComplete && !completedSteps.includes(12)
+                ? [...completedSteps, 12]
+                : completedSteps,
+            },
+          }
         }
         return state
       },

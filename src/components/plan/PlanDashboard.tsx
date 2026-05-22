@@ -220,6 +220,43 @@ export function PlanDashboard({ onBackToWizard }: Props) {
         {/* Routes */}
         <RoutesPanel />
 
+        {/* Documents plan */}
+        {plan.documentsPlan && (
+          <div>
+            <h3 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-2">
+              Important Documents
+            </h3>
+            <Card>
+              {plan.documentsPlan.storageLocation && (
+                <p className="text-sm font-semibold text-gray-800 mb-2">
+                  Location: {plan.documentsPlan.storageLocation}
+                </p>
+              )}
+              {plan.documentsPlan.protectionMethods.length > 0 && (
+                <p className="text-xs text-gray-500 mb-2">
+                  Protection: {plan.documentsPlan.protectionMethods.join(', ')}
+                </p>
+              )}
+              <div className="flex gap-4 text-sm">
+                <span className="text-green-700 font-medium">
+                  {plan.documentsPlan.items.filter(i => i.status === 'have').length} ready
+                </span>
+                <span className="text-amber-700 font-medium">
+                  {plan.documentsPlan.items.filter(i => i.status === 'need').length} still needed
+                </span>
+                <span className="text-blue-700 font-medium">
+                  {plan.documentsPlan.items.filter(i => i.digitalCopy).length} with digital copy
+                </span>
+              </div>
+              {plan.documentsPlan.items.filter(i => i.status === 'need').length > 0 && (
+                <div className="mt-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
+                  Still needed: {plan.documentsPlan.items.filter(i => i.status === 'need').map(i => i.name).join(', ')}
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
         {/* Supply durations */}
         {supplyDurations.length > 0 && (
           <div>

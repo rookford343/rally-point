@@ -4,7 +4,7 @@ import { WizardContainer } from './components/intake/WizardContainer'
 import { PlanDashboard } from './components/plan/PlanDashboard'
 import { DEMO_PLAN } from './demo/seed-data'
 
-const TOTAL_WIZARD_STEPS = 12
+const TOTAL_WIZARD_STEPS = 13
 
 export default function App() {
   const { plan, loadPlan, resetPlan } = useFamilyPlan()

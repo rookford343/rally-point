@@ -28,6 +28,8 @@ export function CommunicationStep({ onNext, onBack }: Props) {
   const [checkInTimes, setCheckInTimes] = useState<string[]>(existing?.checkInTimes ?? defaultCheckIns())
   const [hasMeshtastic, setHasMeshtastic] = useState<boolean>(existing?.hasMeshtastic ?? false)
   const [meshtasticNodes, setMeshtasticNodes] = useState<number>(existing?.meshtasticNodes ?? 0)
+  const [meshtasticChannelName, setMeshtasticChannelName] = useState<string>(existing?.meshtasticChannelName ?? '')
+  const [meshtasticEncryptionEnabled, setMeshtasticEncryptionEnabled] = useState<boolean>(existing?.meshtasticEncryptionEnabled ?? true)
   const [hasHamRadio, setHasHamRadio] = useState<boolean>(existing?.hasHamRadio ?? false)
   const [hamCallsign, setHamCallsign] = useState<string>(existing?.hamCallsign ?? '')
   const [hasNOAARadio, setHasNOAARadio] = useState<boolean>(existing?.hasNOAARadio ?? false)
@@ -78,6 +80,8 @@ export function CommunicationStep({ onNext, onBack }: Props) {
       checkInTimes,
       hasMeshtastic,
       meshtasticNodes: hasMeshtastic ? meshtasticNodes : undefined,
+      meshtasticChannelName: hasMeshtastic && meshtasticChannelName.trim() ? meshtasticChannelName.trim() : undefined,
+      meshtasticEncryptionEnabled: hasMeshtastic ? meshtasticEncryptionEnabled : undefined,
       hasHamRadio,
       hamCallsign: hasHamRadio ? hamCallsign : undefined,
       hasNOAARadio,
@@ -168,18 +172,39 @@ export function CommunicationStep({ onNext, onBack }: Props) {
         </div>
       </Card>
 
-      {/* ── Meshtastic ──────────────────────────────────────────────── */}
+      {/* ── Meshtastic / LoRa ───────────────────────────────────────── */}
       <Card className="space-y-3">
-        <CardTitle>Meshtastic <span className="text-sm font-normal text-gray-500">(optional)</span></CardTitle>
-        <Checkbox label="Family has Meshtastic devices" checked={hasMeshtastic} onChange={e => setHasMeshtastic(e.target.checked)} />
+        <CardTitle>Meshtastic / LoRa Mesh Radio <span className="text-sm font-normal text-gray-500">(optional)</span></CardTitle>
+        <p className="text-sm text-gray-600">
+          Meshtastic devices use LoRa radio to form a mesh network — works with no internet, no cell towers, no infrastructure. Longer range than FRS (1–10+ miles depending on terrain), text-based messaging, and GPS position sharing. Strong complement to FRS for extended outages.
+        </p>
+        <Checkbox label="Family has Meshtastic/LoRa devices" checked={hasMeshtastic} onChange={e => setHasMeshtastic(e.target.checked)} />
         {hasMeshtastic && (
-          <Input
-            label="Number of nodes"
-            type="number"
-            min={0}
-            value={meshtasticNodes}
-            onChange={e => setMeshtasticNodes(parseInt(e.target.value) || 0)}
-          />
+          <div className="space-y-3 pl-2 border-l-2 border-blue-200">
+            <Input
+              label="Number of nodes (devices)"
+              type="number"
+              min={1}
+              value={meshtasticNodes}
+              onChange={e => setMeshtasticNodes(Math.max(1, parseInt(e.target.value) || 1))}
+              hint="Recommend one per family unit. Nodes relay messages even when stationary."
+            />
+            <Input
+              label="Channel name"
+              placeholder="e.g., FAMILY-1 or MARSHALLS"
+              value={meshtasticChannelName}
+              onChange={e => setMeshtasticChannelName(e.target.value.toUpperCase())}
+              hint="A shared channel name all your nodes must use. Set this in the Meshtastic app."
+            />
+            <Checkbox
+              label="Encryption enabled (recommended)"
+              checked={meshtasticEncryptionEnabled}
+              onChange={e => setMeshtasticEncryptionEnabled(e.target.checked)}
+            />
+            <p className="text-xs text-gray-500">
+              Use the default Meshtastic LongFast preset for 3–10 mile range. If all nodes are within 1 mile, ShortFast doubles throughput.
+            </p>
+          </div>
         )}
       </Card>
 

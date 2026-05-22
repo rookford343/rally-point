@@ -150,6 +150,8 @@ export interface CommunicationPlan {
   checkInTimes: string[] // e.g. ["08:00", "12:00", "18:00"]
   hasMeshtastic: boolean
   meshtasticNodes?: number
+  meshtasticChannelName?: string  // e.g. "FAMILY-1" — shared channel name for your group
+  meshtasticEncryptionEnabled?: boolean
   hasHamRadio: boolean
   hamCallsign?: string
   hasNOAARadio: boolean
@@ -218,6 +220,26 @@ export interface SensitiveInventory {
   nonLethal: PrepInventoryItem[]
 }
 
+// ── Documents plan ────────────────────────────────────────────────────────────
+
+export type DocumentStatus = 'have' | 'need' | 'na'
+
+export interface DocumentItem {
+  id: string
+  name: string
+  category: string
+  status: DocumentStatus
+  digitalCopy: boolean
+  notes?: string
+}
+
+export interface DocumentsPlan {
+  items: DocumentItem[]
+  storageLocation?: string  // e.g. "red binder on bedroom closet shelf"
+  protectionMethods: string[]  // e.g. ["fireproof-bag", "encrypted-usb"]
+  digitalBackupLocation?: string  // e.g. "encrypted USB in go-bag + Google Drive"
+}
+
 // ── Route planning ───────────────────────────────────────────────────────────
 
 export interface RouteStep {
@@ -279,6 +301,9 @@ export interface FamilyPlan {
 
   // Pre-researched routes
   unitRoutes: UnitRoute[]
+
+  // Important documents plan
+  documentsPlan?: DocumentsPlan
 
   // Wizard state
   completedSteps: number[]

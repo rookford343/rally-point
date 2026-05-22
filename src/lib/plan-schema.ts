@@ -123,6 +123,8 @@ const CommunicationPlanSchema = z.object({
   checkInTimes: z.array(z.string()),
   hasMeshtastic: z.boolean(),
   meshtasticNodes: z.number().optional(),
+  meshtasticChannelName: z.string().optional(),
+  meshtasticEncryptionEnabled: z.boolean().optional(),
   hasHamRadio: z.boolean(),
   hamCallsign: z.string().optional(),
   hasNOAARadio: z.boolean(),
@@ -168,6 +170,24 @@ const PrepInventoryItemSchema = z.object({
   notes: z.string().optional(),
 })
 
+const DocumentStatusSchema = z.enum(['have', 'need', 'na'])
+
+const DocumentItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string(),
+  status: DocumentStatusSchema,
+  digitalCopy: z.boolean(),
+  notes: z.string().optional(),
+})
+
+const DocumentsPlanSchema = z.object({
+  items: z.array(DocumentItemSchema),
+  storageLocation: z.string().optional(),
+  protectionMethods: z.array(z.string()),
+  digitalBackupLocation: z.string().optional(),
+})
+
 const RouteStepSchema = z.object({
   streetName: z.string(),
   distanceMiles: z.number(),
@@ -210,6 +230,7 @@ export const FamilyPlanSchema = z.object({
   awayProtocols: z.array(AwayProtocolSchema),
   prepInventory: z.array(PrepInventoryItemSchema),
   unitRoutes: z.array(UnitRouteSchema).default([]),
+  documentsPlan: DocumentsPlanSchema.optional(),
   completedSteps: z.array(z.number()),
   currentStep: z.number(),
 })

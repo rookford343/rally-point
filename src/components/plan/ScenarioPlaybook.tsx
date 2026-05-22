@@ -177,6 +177,19 @@ export function ScenarioPlaybook({ scenarioId, onBack }: Props) {
                 <span>{personalize(c, ctx)}</span>
               </li>
             ))}
+            {plan.communication?.hasMeshtastic && (
+              <li className="flex gap-2 mt-1 pt-1 border-t border-gray-100">
+                <span className="text-blue-600">▸</span>
+                <span>
+                  <strong>Meshtastic:</strong> Send position + status on channel{' '}
+                  <span className="font-mono">
+                    {plan.communication.meshtasticChannelName ?? 'your configured channel'}
+                  </span>
+                  {' '}— {plan.communication.meshtasticNodes ?? 0} node(s).
+                  Works with no internet or cell signal.
+                </span>
+              </li>
+            )}
           </ul>
         </Card>
 
