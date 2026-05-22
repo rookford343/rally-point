@@ -78,7 +78,7 @@ function RouteCard({ route, fromAddress, toAddress }: {
 export function RoutesPanel() {
   const { plan } = useFamilyPlan()
 
-  if (plan.unitRoutes.length === 0) return null
+  if (!plan.unitRoutes || plan.unitRoutes.length === 0) return null
 
   return (
     <div>

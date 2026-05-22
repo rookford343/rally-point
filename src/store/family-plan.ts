@@ -15,7 +15,7 @@ import type {
   UnitRoute,
 } from '../types/plan'
 
-const CURRENT_VERSION = 1
+const CURRENT_VERSION = 2
 
 function defaultPlan(): FamilyPlan {
   return {
@@ -199,11 +199,15 @@ export const useFamilyPlan = create<FamilyPlanStore>()(
       storage: createJSONStorage(() => localStorage),
       version: CURRENT_VERSION,
       migrate: (persistedState, version) => {
-        // Future migrations go here
+        const state = persistedState as { plan: FamilyPlan }
         if (version === 0) {
           return { plan: defaultPlan() }
         }
-        return persistedState as { plan: FamilyPlan }
+        if (version === 1) {
+          // unitRoutes was added in v2 — backfill for existing stored plans
+          return { plan: { ...state.plan, unitRoutes: state.plan.unitRoutes ?? [] } }
+        }
+        return state
       },
     }
   )

@@ -34,7 +34,7 @@ export function RouteReviewStep({ onNext, onBack }: Props) {
       for (const unitId of cluster.unitIds) {
         const unit = plan.units.find(u => u.id === unitId)
         if (!unit) continue
-        const existing = plan.unitRoutes.find(r => r.unitId === unitId && r.toHubId === hub.id)
+        const existing = (plan.unitRoutes ?? []).find(r => r.unitId === unitId && r.toHubId === hub.id)
         const existingRoute = existing?.routes[0] ?? null
         initialPairs.push({
           unitId: unit.id,
